@@ -1,0 +1,23 @@
+5 Aprile
+-Added various comments and understood basic flow of the code
+-Modified bundle header in mypacket.h in order to hold a path vector
+-GetSet of the new field
+-Added trafficVolume field in the contact table file generator
+-Adjusted accordingly the contact file reader to add the field in the 
+contactTable structure
+-Basic prototipe of routing functions
+
+6 Aprile
+-Started working on the SCGR algorithm
+-Inverted the way the contact table is read, saving as my_address the RX IP
+and in the in_contact_with_address the TX address of the other node
+
+11 Aprile
+-Completed SCGR algorithm
+-Corrected several errors 
+
+12 Aprile
+-Completed correcting compiling errors
+-Completed writing of support functions
+-Commented useless parts of the code
+

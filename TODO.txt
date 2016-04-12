@@ -1,0 +1,5 @@
+	Finalize and recheck the SCGR FX.
+	Write ChoosePath FX.
+	Write a FX that recognizes the type of node from the IP, keep it generic.
+	Climb into the main adding support for all the new params that were added.
+	
