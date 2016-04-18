@@ -118,7 +118,6 @@ public:
 	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > allPaths);
 	int GetNodeType(Ipv4Address address);
 	bool CheckContact(uint32_t volumeRemaining, uint32_t SOB);
-	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > allPaths);
 
 private:
 	vector<SocketInfo*> active_wired_sockets;
@@ -162,6 +161,8 @@ void DtnApp::CheckWiredBuffer() {
 		mypacket::BndlHeader bndlHeader;
 		(*iter)->PeekHeader(bndlHeader);
 		RoutingEntry routingEntryFound = GetNextHopAddress(bndlHeader.GetDst());
+		//Verify it's a bundle from a central node (9.0.0.1)
+		//Overwrite nexthop ip, reading it from the path vector
 		SendBundle((*iter)->Copy(), routingEntryFound);
 		stored_wired_bundles.erase(iter);
 	}
@@ -173,7 +174,7 @@ void DtnApp::CheckWiredBuffer() {
 
 void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime, uint32_t maximumNumberBundlesInCurrentContact) {
 	bool intersatelliteContact = false;
-	if (firstTime == true){
+/*	if (firstTime == true){
 		dataSentDuringThisContact = 0;
 		contactInProgress = true;
 		uint8_t* nodeInContactAddress = new uint8_t [4];
@@ -200,7 +201,7 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 		}
 		delete [] nodeInContactAddress;
 		delete [] thisNodeAddress;
-	}
+	}*/
 	if ((stored_wireless_bundles.size() != 0) && !intersatelliteContact) {
 		bool bundleNotData = false;
 		mypacket::BndlHeader bndlHeader;
@@ -213,6 +214,15 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 				mypacket::BndlHeader bndlHeader;
 				(*iter)->PeekHeader(bndlHeader);
 				RoutingEntry routingEntryFound = GetNextHopAddress(bndlHeader.GetDst());
+				/*
+				 * If - else that does divid the code on the type of bundle processed
+				 * Overwrite nexthop reading it from the path vector
+				 * the correct vector entry is found firstly finding my ip and then getting the next element
+				 * then check if this element is corresponding to nodeInContactWithWirelessAddress && Now() > m_contactTime --- if true, send =  true;
+				 *
+				 * if not, continue;
+				 */
+				//begin ack management
 				stringstream tmp;
 				tmp << "50.0.0." << nHotSpots+nNanosats+nColdSpots+1;
 				string addressClass = tmp.str();
@@ -236,9 +246,11 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 				}
 				else if (((routingEntryFound.nextHopIP == nodeInContactWithWirelessAddress) || (routingEntryFound.nextHopIP == bndlHeader.GetDst())) && ((dataSentDuringThisContact + 1) <= maximumNumberBundlesInCurrentContact))
 					send = true;
+				//End of ack management
+
 				if (send) {
-					if (bndlHeader.GetBundleType() == 0)
-						dataSentDuringThisContact++;
+/*					if (bndlHeader.GetBundleType() == 0)
+						dataSentDuringThisContact++;*/
 					SendBundle((*iter)->Copy(), routingEntryFound);
 					uint32_t bundleSize = (*iter)->GetSize();
 					sent = true;
@@ -572,9 +584,12 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 		report << "At time " << Simulator::Now().GetSeconds() <<" received bundle data with sequence number " <<  bndlHeader.GetOriginSeqno() <<" from " <<  bndlHeader.GetOrigin() <<	" to " << bndlHeader.GetDst() << "\n";
 		report.close();
 	}
+	//Get your own address
 	if ((m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() == bndlHeader.GetDst()) {
+		/*If the received bundle was a request, create a response
 		if (bndlHeader.GetBundleType() == 3)
 			CreateBundleData(bndlHeader.GetOrigin());
+			*/
 	}
 	else {
 		receivedBundle->RemoveAllPacketTags();
@@ -881,13 +896,13 @@ void DtnApp::Setup(Ptr<Node> node) {
 	m_node = node;
 }
 
-/* Not involved for sure
+
 void DtnApp::StopWirelessTransmission (Ipv4Address nodeInContactWithWirelessAddress) {
 //  Simulator::Schedule (Seconds (50.0), &DtnApp::EmptyTransmittedWirelessBundles, this);
 //  Simulator::Schedule (Seconds (50.0), &DtnApp::DeleteAllActiveWirelessSockets, this);
   contactInProgress = false;
 }
- */
+
 
 void DtnApp::UpdateContactInformation(Ptr<Packet> bufferInfo) {
 	Ipv4Address a = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
