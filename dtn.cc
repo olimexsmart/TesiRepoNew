@@ -85,7 +85,7 @@ public:
 
 	//Function prototypes
 	void CheckWiredBuffer();
-	void CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime, uint32_t maximumNumberBundlesInCurrentContact);
+	void CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, uint32_t maximumNumberBundlesInCurrentContact);
 	//void DeleteAllActiveWirelessSockets();
 	void CloseTxSocket(Ptr<Socket> socket, uint32_t packet_size);
 	void ConnectionAccept(Ptr<Socket>, const Address& from);
@@ -172,36 +172,24 @@ void DtnApp::CheckWiredBuffer() {
 		Simulator::Schedule (Seconds (0.1), &DtnApp::CheckWiredBuffer, this);
 }
 
-void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime, uint32_t maximumNumberBundlesInCurrentContact) {
-	bool intersatelliteContact = false;
-/*	if (firstTime == true){
-		dataSentDuringThisContact = 0;
-		contactInProgress = true;
-		uint8_t* nodeInContactAddress = new uint8_t [4];
-		uint32_t nodeInContactAddr = 0;
-		nodeInContactWithWirelessAddress.Serialize(nodeInContactAddress);
-		if ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] < (nHotSpots+nNanosats+1)))	// Node in contact is a nanosatellite
-			nodeInContactAddress[0] = 50;
-		else		// Node in contact is a ground station
-			nodeInContactAddress[0] = 10;
-		nodeInContactAddr = nodeInContactAddress[3] | nodeInContactAddress[2]<<8 | nodeInContactAddress[1]<<16 | nodeInContactAddress[0]<<24;
-		nodeInContactWithTxAddress = Ipv4Address(nodeInContactAddr);
-		if ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] < (nHotSpots+nNanosats+1)))	// Node in contact is a nanosatellite
-			nodeInContactAddress[0] = 10;
-		else		// Node in contact is a ground station
-			nodeInContactAddress[0] = 50;
-		nodeInContactAddr = nodeInContactAddress[3] | nodeInContactAddress[2]<<8 | nodeInContactAddress[1]<<16 | nodeInContactAddress[0]<<24;
-		nodeInContactWithRxAddress = Ipv4Address(nodeInContactAddr);
-		this->maximumNumberBundlesInCurrentContact = maximumNumberBundlesInCurrentContact;
-		uint8_t* thisNodeAddress = new uint8_t [4];
-		(m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal().Serialize(thisNodeAddress);
-		if (((thisNodeAddress[3] > nHotSpots) && (thisNodeAddress[3] <= (nHotSpots+nNanosats))) && ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] <= (nHotSpots+nNanosats)))) {
-			CreateBundleStatusBuffer();
-			intersatelliteContact = true;
-		}
-		delete [] nodeInContactAddress;
-		delete [] thisNodeAddress;
-	}*/
+/*
+	This function is the hearth of the simulation. 
+	Each call can send a single bundle, of any type.
+	It's scheduled in the simulator in main() at the
+	beginning of the simulation, reading the contact table.
+	Is rescheduled by itself depending on the time needed to
+	send the current bundle.
+	If any bundle has to be sent, is not rescheduled any more, but,
+	in case a new bundle gets to a ground station while the 
+	contact is still possible, is scheduled againf from FindDestination().
+	
+	As for now, the new logic is implemented for Data type bundle, the other types are processed
+	like before to speed up the work.
+	The RoutingEntry construct is not quite useful any more, but is still used to avoid extensive
+	modifications to the code.
+*/
+void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, uint32_t maximumNumberBundlesInCurrentContact) {
+	
 	if ((stored_wireless_bundles.size() != 0) && !intersatelliteContact) {
 		bool bundleNotData = false;
 		mypacket::BndlHeader bndlHeader;
@@ -326,7 +314,7 @@ void DtnApp::CreateBundleAck (Ipv4Address sourceAddress, uint32_t bundleSeqNumbe
 	bndlHeader.SetSrcTimestamp (Simulator::Now ());
 	ack->AddHeader (bndlHeader);
 	stored_wireless_bundles.insert(stored_wireless_bundles.begin(), ack);
-	CheckWirelessBuffer(nodeInContactWithTxAddress, false, maximumNumberBundlesInCurrentContact);
+	CheckWirelessBuffer(nodeInContactWithTxAddress, maximumNumberBundlesInCurrentContact);
 }
 
 void DtnApp::CreateBundleData (Ipv4Address destinationAddress, vector<ContactEntry> contactTable, uint32_t TOV) {
@@ -411,8 +399,6 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 		if(CheckContact(contactTable[thisNode].volumeTraffic[k], SOB)) //Check if this contact is usable
 		{	//Setting up the next hop structure to adding it at the end of the newPath
 			mypacket::BndlPath pathEntry = new mypacket::BndlPath(contactTable[thisNode].t_start[k], contactTable[thisNode].node_in_contact_with[k]);
-/*			pathEntry.SetContactTime(contactTable[thisNode].t_start[k]);
-			pathEntry.SetNextNode(contactTable[thisNode].node_in_contact_with[k]);*/
 			newPath.push_back(pathEntry);
 
 			//This gets to recognize the type of node, if == 1 it's a hotspot
@@ -482,7 +468,7 @@ vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPat
 		}
 	}
 
-	return allPaths[minI][0].m_contactTime;
+	return allPaths[minI].m_contactTime;
 }
 
 
@@ -530,7 +516,7 @@ void DtnApp::CreateBundleStatusBuffer() {
 	bndlHeader.SetSrcTimestamp (Simulator::Now ());
 	bundleInfo->AddHeader (bndlHeader);
 	stored_wireless_bundles.insert(stored_wireless_bundles.begin(), bundleInfo);
-	CheckWirelessBuffer(nodeInContactWithRxAddress, false, maximumNumberBundlesInCurrentContact);
+	CheckWirelessBuffer(nodeInContactWithRxAddress, maximumNumberBundlesInCurrentContact);
 	delete [] coldSpotAddress;
 	delete [] payload;
 }
@@ -570,7 +556,13 @@ void DtnApp::EmptyTransmittedWirelessBundles() {
 	transmitted_wireless_bundles.clear();
 }*/
 
-//This will get involved
+/*
+	This will get involved but not in this stage of the work.
+	Some part of it will be developed to add new functionalities 
+	like a two way request-response.
+	As for now, his main application is to forward bundles in intermediate
+	nodes and provide a report of the simulation. 
+*/
 void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 	mypacket::BndlHeader bndlHeader;
 	receivedBundle->PeekHeader(bndlHeader);
@@ -586,7 +578,8 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 	}
 	//Get your own address
 	if ((m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() == bndlHeader.GetDst()) {
-		/*If the received bundle was a request, create a response
+		/*If the received bundle was a request, create a response. 
+		//NOT IMPLEMENTED YET
 		if (bndlHeader.GetBundleType() == 3)
 			CreateBundleData(bndlHeader.GetOrigin());
 			*/
@@ -598,13 +591,15 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 			stored_wired_bundles.push_back(receivedBundle->Copy());
 		else {
 			stored_wireless_bundles.push_back(receivedBundle->Copy());
+			//Schedule a new wireless communication in case there isn't one going on and the contact is still active
 			if (contactInProgress && !transmissionInProgress)
-				CheckWirelessBuffer(nodeInContactWithRxAddress, false, maximumNumberBundlesInCurrentContact);
+				CheckWirelessBuffer(nodeInContactWithRxAddress, maximumNumberBundlesInCurrentContact);
 		}
 	}
 }
 
-//This will get involved
+//This is still getting involved, but it isn't functional to the new logic
+//still used in bundle ack packets
 RoutingEntry DtnApp::GetNextHopAddress(Ipv4Address bundleDestinationEID) {
 	for (vector<RoutingEntry>::iterator iter = routingTable.begin(); iter != routingTable.end(); ++iter)
 		if (((bundleDestinationEID ^ iter->destinationEID) & iter->destinationEIDMask) == Ipv4Address("0.0.0.0"))
@@ -701,7 +696,11 @@ void DtnApp::PrintNanosatelliteBufferOccupancy() {
 	Simulator::Schedule (Seconds (1.0), &DtnApp::PrintNanosatelliteBufferOccupancy, this);
 }
 
-//Somehow involved
+/* 
+	This  is called by ReceiveBundle when is done receiving all bundle fragments. 
+	Since there is the nedd to do different things when receiving from wired or wireless
+	interfaces, the code needs to be separated.
+*/
 void DtnApp::ProcessBundleFromTCPSocket (Ipv4Address previousHopAddress, uint32_t previousHopPort, Ptr<Packet> receivedBundle) {
 	FindDestination(receivedBundle);
 	mypacket::BndlHeader bndlHeader;
@@ -709,7 +708,7 @@ void DtnApp::ProcessBundleFromTCPSocket (Ipv4Address previousHopAddress, uint32_
 	DeleteActiveSocketEntry(previousHopAddress, previousHopPort, 0);
 }
 
-//Somehow involved
+//See ProcessBundleFromTCPSocket
 void DtnApp::ProcessBundleFromUDPSocket (Ipv4Address previousHopIPAddress, uint32_t previousHopPort, Ptr<Packet> receivedBundle) {
 	mypacket::BndlHeader bndlHeader;
 	receivedBundle->PeekHeader(bndlHeader);
@@ -725,7 +724,11 @@ void DtnApp::ProcessBundleFromUDPSocket (Ipv4Address previousHopIPAddress, uint3
 	DeleteActiveSocketEntry(previousHopIPAddress, previousHopPort, 1);
 }
 
-//Somehow involved and probably also need modifications
+/*
+	This function puts togheter bundle fragments and it's called on callback by the simulator
+	on a receive event. 
+	When an entire bundle is put togheter, ProcessBundleFromTCP/UDP is called.
+*/
 void DtnApp::ReceiveBundle (Ptr<Socket> socket) {
 	mypacket::BndlFragmentHeader bndlFragmentHeader;
 	Address sender_address;
