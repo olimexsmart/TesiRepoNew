@@ -119,6 +119,7 @@ public:
 	int GetNodeType(Ipv4Address address);
 	bool CheckContact(uint32_t volumeRemaining, uint32_t SOB);
 
+
 private:
 	vector<SocketInfo*> active_wired_sockets;
 	vector<SocketInfo*> active_wireless_sockets;
@@ -150,10 +151,10 @@ DtnApp::DtnApp()
 
 
 DtnApp::~DtnApp() //Constructor
-		{
+{
 	m_socket = 0;
 	m_node = 0;
-		}
+}
 
 void DtnApp::CheckWiredBuffer() {
 	if (stored_wired_bundles.size()) {
@@ -161,8 +162,13 @@ void DtnApp::CheckWiredBuffer() {
 		mypacket::BndlHeader bndlHeader;
 		(*iter)->PeekHeader(bndlHeader);
 		RoutingEntry routingEntryFound = GetNextHopAddress(bndlHeader.GetDst());
+
 		//Verify it's a bundle from a central node (9.0.0.1)
-		//Overwrite nexthop ip, reading it from the path vector
+		//If true, overwrite nexthop ip, reading it from the path vector
+		if((m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal() == "9.0.0.1")
+			routingEntryFound.nextHopIP = bndlHeader.GetPathVector()[0].GetNodeAddress();
+
+
 		SendBundle((*iter)->Copy(), routingEntryFound);
 		stored_wired_bundles.erase(iter);
 	}
@@ -181,64 +187,97 @@ void DtnApp::CheckWiredBuffer() {
 	send the current bundle.
 	If any bundle has to be sent, is not rescheduled any more, but,
 	in case a new bundle gets to a ground station while the 
-	contact is still possible, is scheduled againf from FindDestination().
-	
+	contact is still possible, is scheduled again from FindDestination().
+
 	As for now, the new logic is implemented for Data type bundle, the other types are processed
 	like before to speed up the work.
 	The RoutingEntry construct is not quite useful any more, but is still used to avoid extensive
 	modifications to the code.
-*/
+ */
 void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, uint32_t maximumNumberBundlesInCurrentContact) {
-	
-	if ((stored_wireless_bundles.size() != 0) && !intersatelliteContact) {
+
+	bool send = false;
+
+	if (stored_wireless_bundles.size() != 0) {
 		bool bundleNotData = false;
 		mypacket::BndlHeader bndlHeader;
 		(*stored_wireless_bundles.begin())->PeekHeader(bndlHeader);
+
 		if (bndlHeader.GetBundleType() != 0)
 			bundleNotData = true;
+
 		if (contactInProgress || bundleNotData) {
 			bool sent = false;
+
 			for (vector<Ptr<Packet> >::iterator iter = stored_wireless_bundles.begin() ; iter != stored_wireless_bundles.end(); ++iter) {
 				mypacket::BndlHeader bndlHeader;
 				(*iter)->PeekHeader(bndlHeader);
 				RoutingEntry routingEntryFound = GetNextHopAddress(bndlHeader.GetDst());
 				/*
-				 * If - else that does divid the code on the type of bundle processed
+				 * If - else that does divide the code on the type of bundle processed
 				 * Overwrite nexthop reading it from the path vector
 				 * the correct vector entry is found firstly finding my ip and then getting the next element
 				 * then check if this element is corresponding to nodeInContactWithWirelessAddress && Now() > m_contactTime --- if true, send =  true;
 				 *
 				 * if not, continue;
 				 */
-				//begin ack management
-				stringstream tmp;
-				tmp << "50.0.0." << nHotSpots+nNanosats+nColdSpots+1;
-				string addressClass = tmp.str();
-				stringstream tmp2;
-				tmp2 << "50.0.0." << nHotSpots+1;
-				string addressClass2 = tmp2.str();
-				uint8_t* nodeInContactAddress = new uint8_t [4];
-				uint8_t* thisNodeAddress = new uint8_t [4];
-				nodeInContactWithWirelessAddress.Serialize(nodeInContactAddress);
-				(m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal().Serialize(thisNodeAddress);
-				if(((routingEntryFound.nextHopIP == Ipv4Address(addressClass.c_str())) && (nodeInContactWithWirelessAddress < Ipv4Address(addressClass2.c_str()))) || (routingEntryFound.nextHopIP == Ipv4Address("50.0.0.0")) || (routingEntryFound.nextHopIP == Ipv4Address("10.0.0.0")) || (((thisNodeAddress[3] > nHotSpots) && (thisNodeAddress[3] <= (nHotSpots+nNanosats))) && ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] <= (nHotSpots+nNanosats))))) {
-					routingEntryFound.nextHopIP = nodeInContactWithWirelessAddress;
-					routingEntryFound.nextHopIPMask = "255.255.255.255";
+				if(bundleNotData){
+					//Find the next hop entry in the path vector and save it
+					//The address of the node relative of this function call is obtained through this NICE looking expression
+					Ipv4Address thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal();
+					//Read all the path vector and search for this node address, it must be there
+					for (int i = 0; i < bndlHeader.GetPathVector().size(); i++) {
+						if(bndlHeader.GetPathVector()[i].GetNodeAddress() == thisAddress)
+						{	//When found verify if the next hop is nodeInContactWithWirelessAddress and the time is coherent
+							if(bndlHeader.GetPathVector()[i + 1].GetNodeAddress() == nodeInContactWithWirelessAddress && bndlHeader.GetPathVector()[i + 1].GetContactTime() < Simulator::Now())
+							{
+								routingEntryFound.nextHopIP = bndlHeader.GetPathVector()[i].GetNodeAddress();
+								send = true;
+								break;
+								/*
+								 * On this break the bundle is sent to next node.
+								 * When this if fails, the send boolean is still on false,
+								 * the bundle is not sent and the main for
+								 * goes on the next bundle in the wireless buffer
+								 */
+							}
+							else
+								break; //On this break nothing is sent
+						}
+					}
 				}
-				bool send = false;
-				if (((thisNodeAddress[3] > nHotSpots) && (thisNodeAddress[3] <= (nHotSpots+nNanosats))) && ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] <= (nHotSpots+nNanosats)))) {
-					if (((dataSentDuringThisContact + 1) <= maximumNumberBundlesInCurrentContact) && (bndlHeader.GetBundleType() == 0))
-						send = isTransmissionPossibleIntersatellite(nodeInContactWithWirelessAddress, bndlHeader.GetDst());
-					else if (bndlHeader.GetBundleType() != 0)
+				else
+				{
+					//begin ack management
+					stringstream tmp;
+					tmp << "50.0.0." << nHotSpots+nNanosats+nColdSpots+1;
+					string addressClass = tmp.str();
+					stringstream tmp2;
+					tmp2 << "50.0.0." << nHotSpots+1;
+					string addressClass2 = tmp2.str();
+					uint8_t* nodeInContactAddress = new uint8_t [4];
+					uint8_t* thisNodeAddress = new uint8_t [4];
+					nodeInContactWithWirelessAddress.Serialize(nodeInContactAddress);
+					(m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal().Serialize(thisNodeAddress);
+					if(((routingEntryFound.nextHopIP == Ipv4Address(addressClass.c_str())) && (nodeInContactWithWirelessAddress < Ipv4Address(addressClass2.c_str()))) || (routingEntryFound.nextHopIP == Ipv4Address("50.0.0.0")) || (routingEntryFound.nextHopIP == Ipv4Address("10.0.0.0")) || (((thisNodeAddress[3] > nHotSpots) && (thisNodeAddress[3] <= (nHotSpots+nNanosats))) && ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] <= (nHotSpots+nNanosats))))) {
+						routingEntryFound.nextHopIP = nodeInContactWithWirelessAddress;
+						routingEntryFound.nextHopIPMask = "255.255.255.255";
+					}
+
+					if (((thisNodeAddress[3] > nHotSpots) && (thisNodeAddress[3] <= (nHotSpots+nNanosats))) && ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] <= (nHotSpots+nNanosats)))) {
+						if (((dataSentDuringThisContact + 1) <= maximumNumberBundlesInCurrentContact) && (bndlHeader.GetBundleType() == 0))
+							send = isTransmissionPossibleIntersatellite(nodeInContactWithWirelessAddress, bndlHeader.GetDst());
+						else if (bndlHeader.GetBundleType() != 0)
+							send = true;
+					}
+					else if (((routingEntryFound.nextHopIP == nodeInContactWithWirelessAddress) || (routingEntryFound.nextHopIP == bndlHeader.GetDst())) && ((dataSentDuringThisContact + 1) <= maximumNumberBundlesInCurrentContact))
 						send = true;
+					//End of ack management
+					delete [] nodeInContactAddress;
+					delete [] thisNodeAddress;
 				}
-				else if (((routingEntryFound.nextHopIP == nodeInContactWithWirelessAddress) || (routingEntryFound.nextHopIP == bndlHeader.GetDst())) && ((dataSentDuringThisContact + 1) <= maximumNumberBundlesInCurrentContact))
-					send = true;
-				//End of ack management
 
 				if (send) {
-/*					if (bndlHeader.GetBundleType() == 0)
-						dataSentDuringThisContact++;*/
 					SendBundle((*iter)->Copy(), routingEntryFound);
 					uint32_t bundleSize = (*iter)->GetSize();
 					sent = true;
@@ -248,8 +287,7 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, u
 					stored_wireless_bundles.erase(iter);
 					break;
 				}
-				delete [] nodeInContactAddress;
-				delete [] thisNodeAddress;
+
 			}
 			if (!sent)
 				transmissionInProgress = false;
@@ -258,6 +296,8 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, u
 	else
 		transmissionInProgress = false;
 }
+
+
 
 void DtnApp::CloseTxSocket (Ptr<Socket> socket, uint32_t packet_size) {
 	Address socketAddress;
@@ -378,8 +418,8 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable,
 	path will be taken by a separate function.
  */
 void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, vector<ContactEntry> contactTable, Ipv4Address destAddress, double TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere){
-	//Routine here to find the entry in the contactTable startin from an IP address
-	int thisNode; //Holds the index of the contact table correspondig to the node considered in this call
+	//Routine here to find the entry in the contactTable starting from an IP address
+	int thisNode; //Holds the index of the contact table corresponding to the node considered in this call
 	for(thisNode = 0; thisNode < contactTable.size(); thisNode++)
 		if(contactTable[thisNode].this_node_address == destAddress)
 			break;
@@ -395,11 +435,11 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 
 	for(int k = tStart; k < tEnd; k++)
 	{
-		newPath = untilHere; //Reset the path at every hop selection
+		newPath = untilHere; //Reset the path at every hop selection, be sure this simply doesn't create a reference copy
 		if(CheckContact(contactTable[thisNode].volumeTraffic[k], SOB)) //Check if this contact is usable
 		{	//Setting up the next hop structure to adding it at the end of the newPath
 			mypacket::BndlPath pathEntry = new mypacket::BndlPath(contactTable[thisNode].t_start[k], contactTable[thisNode].node_in_contact_with[k]);
-			newPath.push_back(pathEntry);
+			newPath.insert(newPath.begin(), pathEntry);  //This should produce a vector beginning with an HS and ending with a CS
 
 			//This gets to recognize the type of node, if == 1 it's a hotspot
 			//If it's a two is a nanosatellite, recall this function
@@ -468,7 +508,7 @@ vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPat
 		}
 	}
 
-	return allPaths[minI].m_contactTime;
+	return allPaths[minI];
 }
 
 
@@ -562,7 +602,8 @@ void DtnApp::EmptyTransmittedWirelessBundles() {
 	like a two way request-response.
 	As for now, his main application is to forward bundles in intermediate
 	nodes and provide a report of the simulation. 
-*/
+ */
+
 void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 	mypacket::BndlHeader bndlHeader;
 	receivedBundle->PeekHeader(bndlHeader);
@@ -582,7 +623,7 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 		//NOT IMPLEMENTED YET
 		if (bndlHeader.GetBundleType() == 3)
 			CreateBundleData(bndlHeader.GetOrigin());
-			*/
+		 */
 	}
 	else {
 		receivedBundle->RemoveAllPacketTags();
@@ -700,7 +741,7 @@ void DtnApp::PrintNanosatelliteBufferOccupancy() {
 	This  is called by ReceiveBundle when is done receiving all bundle fragments. 
 	Since there is the nedd to do different things when receiving from wired or wireless
 	interfaces, the code needs to be separated.
-*/
+ */
 void DtnApp::ProcessBundleFromTCPSocket (Ipv4Address previousHopAddress, uint32_t previousHopPort, Ptr<Packet> receivedBundle) {
 	FindDestination(receivedBundle);
 	mypacket::BndlHeader bndlHeader;
@@ -728,7 +769,7 @@ void DtnApp::ProcessBundleFromUDPSocket (Ipv4Address previousHopIPAddress, uint3
 	This function puts togheter bundle fragments and it's called on callback by the simulator
 	on a receive event. 
 	When an entire bundle is put togheter, ProcessBundleFromTCP/UDP is called.
-*/
+ */
 void DtnApp::ReceiveBundle (Ptr<Socket> socket) {
 	mypacket::BndlFragmentHeader bndlFragmentHeader;
 	Address sender_address;
@@ -889,7 +930,7 @@ void DtnApp::SendBundle (Ptr<Packet> transmittingBundle, RoutingEntry routingEnt
 void DtnApp::SetContactEntry(ContactEntry contactEntry) {
 	contactTable.push_back(contactEntry);
 }
-*/
+ */
 
 void DtnApp::SetRoutingEntry(RoutingEntry entry) {
 	routingTable.push_back(entry);
@@ -901,9 +942,9 @@ void DtnApp::Setup(Ptr<Node> node) {
 
 
 void DtnApp::StopWirelessTransmission (Ipv4Address nodeInContactWithWirelessAddress) {
-//  Simulator::Schedule (Seconds (50.0), &DtnApp::EmptyTransmittedWirelessBundles, this);
-//  Simulator::Schedule (Seconds (50.0), &DtnApp::DeleteAllActiveWirelessSockets, this);
-  contactInProgress = false;
+	//  Simulator::Schedule (Seconds (50.0), &DtnApp::EmptyTransmittedWirelessBundles, this);
+	//  Simulator::Schedule (Seconds (50.0), &DtnApp::DeleteAllActiveWirelessSockets, this);
+	contactInProgress = false;
 }
 
 
@@ -926,7 +967,7 @@ void DtnApp::UpdateContactInformation(Ptr<Packet> bufferInfo) {
 	delete [] payload;
 	delete [] cSAddress;
 	delete [] storedBundlesSize;
-	CheckWirelessBuffer(bndlHeader.GetOrigin(), false, maximumNumberBundlesInCurrentContact);
+	CheckWirelessBuffer(bndlHeader.GetOrigin(), maximumNumberBundlesInCurrentContact);
 }
 
 int main (int argc, char *argv[])

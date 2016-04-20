@@ -1,5 +1,7 @@
-	Finalize and recheck the SCGR FX.
-	Write ChoosePath FX.
-	Write a FX that recognizes the type of node from the IP, keep it generic.
+#	Finalize and recheck the SCGR FX.
+#	Write ChoosePath FX.
+#	Write a FX that recognizes the type of node from the IP, keep it generic.
 	Climb into the main adding support for all the new params that were added.
-	
+	A lot of the new logic is implemented alongside the old one, afted testing will be necessary to-
+	-rationalise all the code also deleting extensive parts needed in the old version.
+	Recheck again the contact table and the SCGR, particularly the data structures, keeping in mind the double IP thing

@@ -115,8 +115,8 @@ class BndlFragmentHeader : public Header
 				void SetContactTime(uint32_t contactTime){m_contactTime = contactTime;}
 				uint32_t GetContactTime(){return m_contactTime;}
 
-				void SetNextNode(Ipv4Address nextNode){m_nextNode = nextNode;}
-				Ipv4Address GetNextNode(){return m_nextNode;}
+				void SetNodeAddress(Ipv4Address nextNode){m_nextNode = nextNode;}
+				Ipv4Address GetNodeAddress(){return m_nextNode;}
 
 			private:
 				uint32_t m_contactTime;

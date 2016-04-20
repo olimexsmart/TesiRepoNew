@@ -19,5 +19,17 @@ and in the in_contact_with_address the TX address of the other node
 12 Aprile
 -Completed correcting compiling errors
 -Completed writing of support functions
--Commented useless parts of the code
+-Commented useless parts
+
+18 Aprile
+-Beginning the of the necessary modifications in order to read
+the path vector and route the bundle
+-Functions that needed modifications:
+	*CheckWiredBuffer
+	*CheckWirelessBuffer
+-Commented parts to be modified with the help of the PT
+
+20 Aprile
+-Actuation of the modifications
+-Checked how the SCGR algorithm saves the path vector
 
