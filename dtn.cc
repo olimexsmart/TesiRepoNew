@@ -165,7 +165,7 @@ void DtnApp::CheckWiredBuffer() {
 
 		//Verify it's a bundle from a central node (9.0.0.1)
 		//If true, overwrite nexthop ip, reading it from the path vector
-		if((m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal() == "9.0.0.1")
+		if((m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() == "9.0.0.1")
 			routingEntryFound.nextHopIP = bndlHeader.GetPathVector()[0].GetNodeAddress();
 
 
@@ -221,15 +221,21 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, u
 				 *
 				 * if not, continue;
 				 */
-				if(bundleNotData){
+				if(!bundleNotData){
 					//Find the next hop entry in the path vector and save it
 					//The address of the node relative of this function call is obtained through this NICE looking expression
+					//If decision: 1 if hotspot or nanosat is the caller, 3 if coldspot
 					Ipv4Address thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal();
+					if(GetNodeType(thisAddress) == 1 || GetNodeType(thisAddress) == 2)
+						Ipv4Address thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
+					else
+						Ipv4Address thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (3, 0)).GetLocal();
+
 					//Read all the path vector and search for this node address, it must be there
 					for (int i = 0; i < bndlHeader.GetPathVector().size(); i++) {
 						if(bndlHeader.GetPathVector()[i].GetNodeAddress() == thisAddress)
-						{	//When found verify if the next hop is nodeInContactWithWirelessAddress and the time is coherent
-							if(bndlHeader.GetPathVector()[i + 1].GetNodeAddress() == nodeInContactWithWirelessAddress && bndlHeader.GetPathVector()[i + 1].GetContactTime() < Simulator::Now())
+						{	//When found, verify if the next hop is nodeInContactWithWirelessAddress and the time is coherent with this contact
+							if(bndlHeader.GetPathVector()[i + 1].GetNodeAddress() == nodeInContactWithWirelessAddress && bndlHeader.GetPathVector()[i + 1].GetContactTime() <= Simulator::Now())
 							{
 								routingEntryFound.nextHopIP = bndlHeader.GetPathVector()[i].GetNodeAddress();
 								send = true;
@@ -296,7 +302,6 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, u
 	else
 		transmissionInProgress = false;
 }
-
 
 
 void DtnApp::CloseTxSocket (Ptr<Socket> socket, uint32_t packet_size) {
@@ -406,7 +411,7 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable,
 	vector< vector<mypacket::BndlPath> > allPaths;
 	vector<mypacket::BndlPath> untilHere;
 
-	allPaths = SourceContactGraphRouting(allPaths, contactTable, destinationAddress, TOV, SOB, untilHere);
+	SourceContactGraphRouting(allPaths, contactTable, destinationAddress, TOV, SOB, untilHere);
 
 	return ChoosePath(allPaths);
 }
@@ -437,8 +442,29 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 	{
 		newPath = untilHere; //Reset the path at every hop selection, be sure this simply doesn't create a reference copy
 		if(CheckContact(contactTable[thisNode].volumeTraffic[k], SOB)) //Check if this contact is usable
-		{	//Setting up the next hop structure to adding it at the end of the newPath
-			mypacket::BndlPath pathEntry = new mypacket::BndlPath(contactTable[thisNode].t_start[k], contactTable[thisNode].node_in_contact_with[k]);
+		{	/*
+		      There are two IP interfaces, we must refer only to the RX one.
+			  Hops between nanosats involve a TX IP (50.0.0.X) and a RX IP (10.0.0.X),
+			  We are reading the contact table as an RX IP because we are searching a path
+			  starting from the destination node. Because of this, the next hop address is a
+			  TX IP. That's not good because for the next call of SCGR or to save it in the
+			  path vector we need a RX IP. So here we are ADDRESSING ;) this issue.
+			*/
+			Ipv4Address nextHop = contactTable[thisNode].node_in_contact_with[k];
+			uint8_t* addr = new uint8_t[4];
+			nextHop.Serialize(addr);
+			if(addr[0] == 50)
+				addr[0] = 10;
+			else if(addr[0] == 10) //Else if not needed, but I don't care.
+			{	//If a HotSpot, we need to write down the wired interface.
+				//The time of contact has no meaning in this case and it's not read anywhere.
+				addr[0] = 9;
+				addr[3] = addr[3] + 1;
+			}
+			nextHop = new Ipv4Address(addr);
+
+			//Setting up the next hop structure to adding it at the end of the newPath
+			mypacket::BndlPath pathEntry = new mypacket::BndlPath(contactTable[thisNode].t_start[k], nextHop);
 			newPath.insert(newPath.begin(), pathEntry);  //This should produce a vector beginning with an HS and ending with a CS
 
 			//This gets to recognize the type of node, if == 1 it's a hotspot
@@ -446,16 +472,15 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 			if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 1)
 				allPaths.push_back(newPath);
 			else if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 2)
-				allPaths = SourceContactGraphRouting(allPaths, contactTable, contactTable[thisNode].node_in_contact_with[k], TOV, SOB, newPath);
+				SourceContactGraphRouting(allPaths, contactTable, nextHop, contactTable[thisNode].t_start[k], SOB, newPath);
 		}
 	}
 }
 
 /*
 	In the need of recognizing easily the type of node we are dealing with,
-	this function will take an IP address and a flag that indicates if it is
-	an RX or TX IP. 
-	Keep in mind this needs to know the configuation of the network.
+	this function will take an IP address.
+	Keep in mind this needs to know the configuration of the network.
 	Returns: 1 -> HotSpot / 2 -> NanoSat / 3 -> ColdSpot
 			-1 -> Error
  */
@@ -583,7 +608,6 @@ void DtnApp::DeleteActiveSocketEntry (Ipv4Address sourceIpAddress, uint32_t sour
 	}
 }
  */
-
 /*Not used in this work
 void DtnApp::DeleteAllActiveWirelessSockets() {
 	active_wireless_sockets.clear();
@@ -1214,7 +1238,19 @@ int main (int argc, char *argv[])
 	double t_now;
 	bool start_contact[(uint32_t)nHotSpots+(uint32_t)nNanosats+(uint32_t)nColdSpots][(uint32_t)nHotSpots+(uint32_t)nNanosats+(uint32_t)nColdSpots];
 	for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
-		contactEntry.this_node_address = (allWirelessNodes.Get(i)->GetObject<Ipv4>()->GetAddress(2,0)).GetLocal();
+
+		//Modify as in contact table reading, this_node_address must contain the RX IP, which is not the on same interface number across different node topologies
+		for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
+				if(i < nHotSpots || i >= nHotSpots+nNanosats){ //If hotspot or coldspot
+					contactEntry.this_node_address = (allWirelessNodes.Get(i)->GetObject<Ipv4>()->GetAddress(3,0)).GetLocal();
+					contactTable.push_back(contactEntry);
+				}
+				else{ //If nanosat
+					contactEntry.this_node_address = (allWirelessNodes.Get(i)->GetObject<Ipv4>()->GetAddress(1,0)).GetLocal();
+					contactTable.push_back(contactEntry);
+				}
+			}
+
 		contactTable.push_back(contactEntry);
 		for (uint32_t j = 0; j < (nHotSpots+nNanosats+nColdSpots); j++)
 			start_contact[i][j] = false;
@@ -1224,13 +1260,14 @@ int main (int argc, char *argv[])
 		nanosatelliteNodesMobility->AdvancePositionNanosatellites(2 * M_PI / nNanosats, nOrbits, t_now, true);
 		groundStationsNodesMobility->AdvancePositionGroundStations(t_now, true);
 		for (uint32_t i = 0; i < (nHotSpots+nNanosats+nColdSpots) ; i++) {
-			Ptr<MobilityModel> wirelessNode1Mobility =allWirelessNodes.Get(i)->GetObject<MobilityModel> ();
+			Ptr<MobilityModel> wirelessNode1Mobility = allWirelessNodes.Get(i)->GetObject<MobilityModel> ();
 			Vector position1 = wirelessNode1Mobility->GetPosition();
 			for(uint32_t j=0; j < (nHotSpots+nNanosats+nColdSpots); j++) {
 				if (((i < nHotSpots) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats)))) || ((i >= (nHotSpots+nNanosats)) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats)))) || (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && (i != j))) {			// HSs or CSs in contact with a SAT or SATs in contact with a GS or a SAT
 					Ptr<MobilityModel> wirelessNode2Mobility = allWirelessNodes.Get(j)->GetObject<MobilityModel> ();
 					Vector position2 = wirelessNode2Mobility->GetPosition();
 					double distance = wirelessNode1Mobility->GetDistanceFrom(wirelessNode2Mobility);
+					//A  threshold is defined to ensure a minimum of margin: the contact time is saved as a little bit shorter, this way there is still time for a very narrow ack for example
 					double threshold = 0;
 					if (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats))))
 						threshold = (99*TX_RANGE_WIRELESS_TRANSMISSION_NS_NS/100);
@@ -1240,10 +1277,10 @@ int main (int argc, char *argv[])
 						if (start_contact[i][j] == false) {
 							start_contact[i][j] = true;
 							contactTable[i].t_start.push_back(t_now);
-							if ((j < nHotSpots) || (j >= nHotSpots+nNanosats))
-								contactTable[i].node_in_contact_with.push_back(allWirelessNodes.Get(j)->GetObject<Ipv4>()->GetAddress(3,0).GetLocal());
-							else
-								contactTable[i].node_in_contact_with.push_back(allWirelessNodes.Get(j)->GetObject<Ipv4>()->GetAddress(1,0).GetLocal());
+							//Here remains only a single line with "2", the TX IP
+
+							contactTable[i].node_in_contact_with.push_back(allWirelessNodes.Get(j)->GetObject<Ipv4>()->GetAddress(2,0).GetLocal());
+
 						}
 					}
 					else {
@@ -1564,16 +1601,16 @@ int main (int argc, char *argv[])
 		}
 	}
 	//For every line of the contact table
-	while (contactReport >> sourceAddress >> destinationAddress >> endContactTime >> startContactTime >> volumeTraffic) {
+	while (contactReport >> destinationAddress >> sourceAddress >> endContactTime >> startContactTime >> volumeTraffic) {
 		//This for handles the comparison between a string and an Ipv4Address object
 		for (uint32_t i = 0; i < (nHotSpots+nNanosats+nColdSpots); i++) {
 			stringstream tmp;
 			if ((i >= nHotSpots) && (i < (nHotSpots+nNanosats)))
-				tmp << "50.0.0." << (i+1);
-			else
 				tmp << "10.0.0." << (i+1);
+			else
+				tmp << "50.0.0." << (i+1);
 			string address = tmp.str();
-			//Actually compare the read address and if this is the right entry add the remaing information
+			//Actually compare the read address and if this is the right entry add the remaining information
 			if (destinationAddress == address) {
 				Simulator::Schedule(MilliSeconds((uint32_t)startContactTime), &DtnApp::CheckWirelessBuffer, app[i+1], Ipv4Address(destinationAddress.c_str()), true, (floor((double)((uint32_t)endContactTime - (uint32_t)startContactTime) / 1000 * TX_RATE_WIRELESS_LINK / BUNDLEDATASIZE)));
 				Simulator::Schedule(MilliSeconds((uint32_t)endContactTime), &DtnApp::StopWirelessTransmission, app[i+1], Ipv4Address(destinationAddress.c_str()));

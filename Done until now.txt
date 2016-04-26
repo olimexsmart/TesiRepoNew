@@ -33,3 +33,6 @@ the path vector and route the bundle
 -Actuation of the modifications
 -Checked how the SCGR algorithm saves the path vector
 
+26 Aprile 
+-Final correction all related to the double IP interface
+-Modified the SCGR and contact table generation because of this.
