@@ -32,6 +32,27 @@ using namespace std;
 namespace ns3 {
   namespace mypacket {
 
+  //-----------------------------------------------------------------------------
+  // BNDL PATH
+  //-----------------------------------------------------------------------------
+
+  	//A vector of these will be integrated into the boundle header
+  	class BndlPath
+  		{
+  			public:
+  				BndlPath (uint32_t contactTime, Ipv4Address nextNode);
+  				void Print (ostream &os) const;
+  				void SetContactTime(uint32_t contactTime){m_contactTime = contactTime;}
+  				uint32_t GetContactTime(){return m_contactTime;}
+
+  				void SetNodeAddress(Ipv4Address nextNode){m_nextNode = nextNode;}
+  				Ipv4Address GetNodeAddress(){return m_nextNode;}
+
+  			private:
+  				uint32_t m_contactTime;
+  				Ipv4Address m_nextNode;
+  		};
+
 //-----------------------------------------------------------------------------
       // BUNDLE HEADER
 //-----------------------------------------------------------------------------
@@ -47,7 +68,7 @@ namespace ns3 {
       uint32_t Deserialize (Buffer::Iterator start);
       void Print (ostream &os) const;
 
-	  //Set - Get Proprieties
+	  //Set - Get Properties
       void SetBundleType (uint8_t a) { m_bundleType = a; }
       uint8_t GetBundleType () const { return m_bundleType; }
       void SetDst (Ipv4Address a) { m_dst = a; }
@@ -61,8 +82,8 @@ namespace ns3 {
       void SetSrcTimestamp (Time s);
       Time GetSrcTimestamp () const;
 	  //const?
-	  void SetPathVector (vector<BndlPath> path) { path = m_path; }
-	  vector<BndlPath> GetPathVector () const { return m_path; }
+	  void SetPathVector (vector<mypacket::BndlPath> path) { m_path = path; }
+	  vector<mypacket::BndlPath> GetPathVector () const { return m_path; }
 
       bool operator== (BndlHeader const & o) const;
     private:
@@ -73,7 +94,7 @@ namespace ns3 {
       uint32_t       m_payloadSize;
       uint32_t       m_srcTimestamp;
 	  //Maybe also a field with the size of the vector is necessary
-	  vector<BndlPath>	m_path; //This will be filled by the SCGR algorithm and read by the intermediary nodes
+	  vector<mypacket::BndlPath>	m_path; //This will be filled by the SCGR algorithm and read by the intermediary nodes
     };
 
     ostream & operator<< (ostream & os, BndlHeader const &);
@@ -102,26 +123,7 @@ class BndlFragmentHeader : public Header
     		uint8_t m_totalFragmentsNo;
         };
 
-//-----------------------------------------------------------------------------
-// BNDL PATH
-//-----------------------------------------------------------------------------
 
-	//A vector of these will be integrated into the boundle header
-	class BndlPath
-		{
-			public:
-				BndlPath (uint32_t contactTime, Ipv4Address nextNode);
-				void Print (ostream &os) const;
-				void SetContactTime(uint32_t contactTime){m_contactTime = contactTime;}
-				uint32_t GetContactTime(){return m_contactTime;}
-
-				void SetNodeAddress(Ipv4Address nextNode){m_nextNode = nextNode;}
-				Ipv4Address GetNodeAddress(){return m_nextNode;}
-
-			private:
-				uint32_t m_contactTime;
-				Ipv4Address m_nextNode;
-		};
   }
 }
 #endif /* MYPACKET_H */

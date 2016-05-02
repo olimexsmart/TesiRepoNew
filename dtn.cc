@@ -33,12 +33,12 @@ using namespace std;
 DTNNodesMobility* groundStationsNodesMobility;
 DTNNodesMobility* nanosatelliteNodesMobility;
 
-int nHotSpots;
-int nNanosats;
-int nColdSpots;
-int nRuralNodesForEachColdSpot;
-int nOrbits;
-int nBundles;
+uint32_t nHotSpots;
+uint32_t nNanosats;
+uint32_t nColdSpots;
+uint32_t nRuralNodesForEachColdSpot;
+uint32_t nOrbits;
+uint32_t nBundles;
 uint32_t TOV;
 
 struct RoutingEntry {
@@ -130,9 +130,9 @@ private:
 	vector<Ptr<Packet> > transmitted_wired_bundles;
 	vector<Ptr<Packet> > transmitted_wireless_bundles;
 	vector<RoutingEntry> routingTable;
-	uint32_t dataSentDuringThisContact;
 	bool contactInProgress;
 	bool transmissionInProgress;
+	uint32_t dataSentDuringThisContact;
 	Ipv4Address nodeInContactWithTxAddress;
 	Ipv4Address nodeInContactWithRxAddress;
 	uint32_t maximumNumberBundlesInCurrentContact;
@@ -227,9 +227,9 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, u
 					//If decision: 1 if hotspot or nanosat is the caller, 3 if coldspot
 					Ipv4Address thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal();
 					if(GetNodeType(thisAddress) == 1 || GetNodeType(thisAddress) == 2)
-						Ipv4Address thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
+						thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
 					else
-						Ipv4Address thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (3, 0)).GetLocal();
+						thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (3, 0)).GetLocal();
 
 					//Read all the path vector and search for this node address, it must be there
 					for (int i = 0; i < bndlHeader.GetPathVector().size(); i++) {
@@ -289,7 +289,7 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, u
 					sent = true;
 					transmissionInProgress = true;
 					if (bndlHeader.GetBundleType() == 0)
-						Simulator::Schedule (Seconds ((double) bundleSize / TX_RATE_WIRELESS_LINK), &DtnApp::CheckWirelessBuffer, this, nodeInContactWithWirelessAddress, false, maximumNumberBundlesInCurrentContact);
+						Simulator::Schedule (Seconds ((double) bundleSize / TX_RATE_WIRELESS_LINK), &DtnApp::CheckWirelessBuffer, this, nodeInContactWithWirelessAddress, maximumNumberBundlesInCurrentContact);
 					stored_wireless_bundles.erase(iter);
 					break;
 				}
@@ -461,10 +461,11 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 				addr[0] = 9;
 				addr[3] = addr[3] + 1;
 			}
-			nextHop = new Ipv4Address(addr);
+			uint32_t destAddress = addr[3] | addr[2]<<8 | addr[1]<<16 | addr[0]<<24;
+			nextHop = Ipv4Address(destAddress);
 
 			//Setting up the next hop structure to adding it at the end of the newPath
-			mypacket::BndlPath pathEntry = new mypacket::BndlPath(contactTable[thisNode].t_start[k], nextHop);
+			mypacket::BndlPath pathEntry = mypacket::BndlPath(contactTable[thisNode].t_start[k], nextHop);
 			newPath.insert(newPath.begin(), pathEntry);  //This should produce a vector beginning with an HS and ending with a CS
 
 			//This gets to recognize the type of node, if == 1 it's a hotspot
@@ -521,14 +522,14 @@ vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPat
 	//The second index has to be zero because the delivery time depends on the last contact,
 	//the one with the cold spot
 	//Yes, the BndlPath vector is in reversed order, keep in mind that and think about to reverse it some time in the future
-	int minT = allPaths[0][0].m_contactTime;
+	int minT = allPaths[0][0].GetContactTime();
 	int minI = 0;
 
 	for(int i = 0; i < allPaths.size(); i++)
 	{
-		if(allPaths[i][0].m_contactTime < minT)
+		if(allPaths[i][0].GetContactTime() < minT)
 		{
-			minT = allPaths[i][0].m_contactTime;
+			minT = allPaths[i][0].GetContactTime();
 			minI = i;
 		}
 	}
@@ -586,7 +587,6 @@ void DtnApp::CreateBundleStatusBuffer() {
 	delete [] payload;
 }
 
-/*Not used in this work
 void DtnApp::DeleteActiveSocketEntry (Ipv4Address sourceIpAddress, uint32_t sourcePort, uint32_t socketType) {
 	if (socketType == 0) {
 		for (vector<SocketInfo*>::iterator iter = active_wired_sockets.begin() ; iter != active_wired_sockets.end(); ++iter) {
@@ -607,7 +607,7 @@ void DtnApp::DeleteActiveSocketEntry (Ipv4Address sourceIpAddress, uint32_t sour
 		}
 	}
 }
- */
+
 /*Not used in this work
 void DtnApp::DeleteAllActiveWirelessSockets() {
 	active_wireless_sockets.clear();
@@ -633,7 +633,7 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 	receivedBundle->PeekHeader(bndlHeader);
 	if (bndlHeader.GetBundleType() == 0) {
 		stringstream fileName;
-		fileName <<  "/home/fabio/source/ns-3.21/Temp/Received_by_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+		fileName <<  "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Received_by_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 		string tmp = fileName.str();
 		const char* reportName = tmp.c_str();
 		ofstream report;
@@ -751,7 +751,7 @@ bool DtnApp::isTransmissionPossibleIntersatellite (Ipv4Address nodeInContactWith
 
 void DtnApp::PrintNanosatelliteBufferOccupancy() {
 	stringstream fileName;
-	fileName << "/home/fabio/source/ns-3.21/Temp/Buffer_Occupancy_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+	fileName << "/home/tesista/ns-allinone-3.21/source/ns-3.21/Temp/Buffer_Occupancy_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 	string tmp = fileName.str();
 	const char* reportName = tmp.c_str();
 	ofstream report;
@@ -926,7 +926,7 @@ void DtnApp::SendBundle (Ptr<Packet> transmittingBundle, RoutingEntry routingEnt
 	}
 	if (bndlHeader.GetBundleType() == 0) {
 		stringstream fileName;
-		fileName << "/home/fabio/source/ns-3.21/Temp/Sent_by_"  << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+		fileName << "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Sent_by_"  << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 		string tmp = fileName.str();
 		const char* reportName = tmp.c_str();
 		ofstream report;
@@ -996,9 +996,9 @@ void DtnApp::UpdateContactInformation(Ptr<Packet> bufferInfo) {
 
 int main (int argc, char *argv[])
 {
-	nHotSpots = 4;
+	nHotSpots = 8;
 	nNanosats = 16;
-	nColdSpots = 8;
+	nColdSpots = 16;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
 	nBundles = 1000;
@@ -1236,7 +1236,7 @@ int main (int argc, char *argv[])
 	allWirelessNodes.Add (nanosatelliteNodesContainer);
 	allWirelessNodes.Add (coldSpotNodesContainer);
 	double t_now;
-	bool start_contact[(uint32_t)nHotSpots+(uint32_t)nNanosats+(uint32_t)nColdSpots][(uint32_t)nHotSpots+(uint32_t)nNanosats+(uint32_t)nColdSpots];
+	bool start_contact[nHotSpots + nNanosats + nColdSpots][nHotSpots + nNanosats + nColdSpots];
 	for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
 
 		//Modify as in contact table reading, this_node_address must contain the RX IP, which is not the on same interface number across different node topologies
@@ -1257,7 +1257,7 @@ int main (int argc, char *argv[])
 	}
 	for (uint32_t initialcount = 1; initialcount < (duration * 100); initialcount++) { // 8640000 = [(24 x 3600 x 1000)/10ms]
 		t_now = initialcount * 10;
-		nanosatelliteNodesMobility->AdvancePositionNanosatellites(2 * M_PI / nNanosats, nOrbits, t_now, true);
+		nanosatelliteNodesMobility->AdvancePositionNanosatellites(2 * M_PI / (double)nNanosats, nOrbits, t_now, true);
 		groundStationsNodesMobility->AdvancePositionGroundStations(t_now, true);
 		for (uint32_t i = 0; i < (nHotSpots+nNanosats+nColdSpots) ; i++) {
 			Ptr<MobilityModel> wirelessNode1Mobility = allWirelessNodes.Get(i)->GetObject<MobilityModel> ();
@@ -1286,7 +1286,7 @@ int main (int argc, char *argv[])
 					else {
 						if (start_contact[i][j] == true) {
 							stringstream contactFile;
-							contactFile << "/home/fabio/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
+							contactFile << "/home/tesista/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
 							string tmp = contactFile.str();
 							const char* reportName = tmp.c_str();
 							ofstream report;
@@ -1294,7 +1294,7 @@ int main (int argc, char *argv[])
 							report.setf(ios_base::fixed);
 							start_contact[i][j] = false;
 							contactTable[i].t_end.push_back(t_now);
-							report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << *((contactTable[i].t_end.end() - contactTable[i].t_start.end()) * TX_RATE_WIRELESS_LINK) << "\n";
+							report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << (*(contactTable[i].t_end.end() - 1) - *(contactTable[i].t_start.end() - 1)) * (int)TX_RATE_WIRELESS_LINK << "\n";
 							report.close ();
 						}
 					}
@@ -1568,8 +1568,8 @@ int main (int argc, char *argv[])
 
 	// READING CONTACT TABLE
 	//Getting ready to read contact table file
-	stringstream contactFile;
-	contactFile << "/home/fabio/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
+/*	stringstream contactFile;
+	contactFile << "/home/tesista/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
 	string contact = contactFile.str();
 	const char* contactFileName = contact.c_str();
 	ifstream contactReport;
@@ -1585,11 +1585,10 @@ int main (int argc, char *argv[])
 	allWirelessNodes.Add (hotSpotNodesContainer);
 	allWirelessNodes.Add (nanosatelliteNodesContainer);
 	allWirelessNodes.Add (coldSpotNodesContainer);
-	/*
-		Add an entry to the contactTable structure for each node in the simulation, saving the RX IP.
-		This because the routing algorithm begins the computation from the destination address, which
-		must be an RX IP. 
-	 */
+	//	Add an entry to the contactTable structure for each node in the simulation, saving the RX IP.
+	//	This because the routing algorithm begins the computation from the destination address, which
+	//	must be an RX IP.
+
 	for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
 		if(i < nHotSpots || i >= nHotSpots+nNanosats){
 			contactEntry.this_node_address = (allWirelessNodes.Get(i)->GetObject<Ipv4>()->GetAddress(3,0)).GetLocal();
@@ -1626,7 +1625,7 @@ int main (int argc, char *argv[])
 
 	for (uint32_t i = 0; i < (nHotSpots + nNanosats + nColdSpots + 1); i++)
 		app[i]->contactTable = contactTable;
-
+*/
 	Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/AckTimeout", TimeValue (MilliSeconds (100)));
 
 	/*
@@ -1635,10 +1634,10 @@ int main (int argc, char *argv[])
 	 */
 	// Bundle transmission
 	for (uint32_t count = 1; count <= nBundles; count++) {
-		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2");
-		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "12.0.0.2");
-		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "13.0.0.2");
-		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "14.0.0.2");
+//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2");
+//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "12.0.0.2");
+//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "13.0.0.2");
+//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "14.0.0.2");
 		//Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[(uint32_t)nHotSpots+(uint32_t)nNanosats+(uint32_t)nColdSpots+1], "9.0.0.1");
 	}
 

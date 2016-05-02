@@ -36,3 +36,7 @@ the path vector and route the bundle
 26 Aprile 
 -Final correction all related to the double IP interface
 -Modified the SCGR and contact table generation because of this.
+
+2 Maggio
+-Corrected build errors
+-First contact table created
