@@ -2,4 +2,4 @@
 
 def build(bld):
     obj = bld.create_ns3_program('rete_nanosat', ['wifi', 'internet', 'bridge', 'csma', 'netanim'])
-    obj.source = ['dtn.cc', 'mypacket.cc', 'DTNNodesMobility.cc']
+    obj.source = ['main.cc', 'mypacket.cc', 'DTNNodesMobility.cc', "DTNapp.cc"]

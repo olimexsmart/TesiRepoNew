@@ -45,4 +45,7 @@ the path vector and route the bundle
 -Corrected errors on contact table build
 
 4 Maggio
--
+-Created a new branch for new and radical modifications
+-dtn.cc split in main.cc, DTNapp.cc, DTNapp.h
+-Started a file based simulation configurator
+
