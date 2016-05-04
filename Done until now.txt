@@ -40,3 +40,9 @@ the path vector and route the bundle
 2 Maggio
 -Corrected build errors
 -First contact table created
+
+3 Maggio 
+-Corrected errors on contact table build
+
+4 Maggio
+-

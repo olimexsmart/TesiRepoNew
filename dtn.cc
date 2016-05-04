@@ -138,7 +138,7 @@ private:
 	uint32_t maximumNumberBundlesInCurrentContact;
 };
 
-DtnApp::DtnApp()
+DtnApp::DtnApp() //Constructor
 : m_node(NULL),
   m_socket (NULL),
   contactInProgress(false),
@@ -150,7 +150,7 @@ DtnApp::DtnApp()
 { }
 
 
-DtnApp::~DtnApp() //Constructor
+DtnApp::~DtnApp() //Destructor
 {
 	m_socket = 0;
 	m_node = 0;
@@ -1647,7 +1647,9 @@ int main (int argc, char *argv[])
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
 	for (uint32_t i = 0; i < nColdSpots; i++)
 		allIPNodes.Add(ruralNetworkNodesContainers[i]);
+
 	PopulateArpCache(allIPNodes);
+
 	Simulator::Stop (Seconds (duration));
 	Simulator::Run ();
 	Simulator::Destroy ();
