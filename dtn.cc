@@ -996,6 +996,8 @@ void DtnApp::UpdateContactInformation(Ptr<Packet> bufferInfo) {
 
 int main (int argc, char *argv[])
 {
+	//Simulator::EnableParallelSimulation(); just dream about it
+
 	nHotSpots = 8;
 	nNanosats = 16;
 	nColdSpots = 16;
@@ -1004,7 +1006,8 @@ int main (int argc, char *argv[])
 	nBundles = 1000;
 	TOV = 3600000; //One hour in millis
 
-	uint32_t duration = 10*86400;	// [s] 86400 (24h)
+	//uint32_t duration = 10*86400;	// [s] 86400 (24h)
+	uint32_t duration = 86400;	// [s] 86400 (24h)
 
 	CommandLine cmd;
 	cmd.AddValue("nHotSpots", "Number of hot spots", nHotSpots);
@@ -1255,8 +1258,8 @@ int main (int argc, char *argv[])
 		for (uint32_t j = 0; j < (nHotSpots+nNanosats+nColdSpots); j++)
 			start_contact[i][j] = false;
 	}
-	for (uint32_t initialcount = 1; initialcount < (duration * 100); initialcount++) { // 8640000 = [(24 x 3600 x 1000)/10ms]
-		t_now = initialcount * 10;
+	for (uint32_t initialcount = 1; initialcount < (duration * 100); initialcount++) { // 8640000 = [(24 x 3600 x 1000)/10ms] tens of milliseconds
+		t_now = initialcount * 10; //milliseconds
 		nanosatelliteNodesMobility->AdvancePositionNanosatellites(2 * M_PI / (double)nNanosats, nOrbits, t_now, true);
 		groundStationsNodesMobility->AdvancePositionGroundStations(t_now, true);
 		for (uint32_t i = 0; i < (nHotSpots+nNanosats+nColdSpots) ; i++) {
@@ -1294,7 +1297,7 @@ int main (int argc, char *argv[])
 							report.setf(ios_base::fixed);
 							start_contact[i][j] = false;
 							contactTable[i].t_end.push_back(t_now);
-							report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << (*(contactTable[i].t_end.end() - 1) - *(contactTable[i].t_start.end() - 1)) * (int)TX_RATE_WIRELESS_LINK << "\n";
+							report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << (long)((*(contactTable[i].t_end.end() - 1) / 1000.0 - *(contactTable[i].t_start.end() - 1) / 1000.0) * TX_RATE_WIRELESS_LINK) << " " << initialcount / duration << "%" <<"\n";
 							report.close ();
 						}
 					}
@@ -1342,7 +1345,7 @@ int main (int argc, char *argv[])
 	}
 	/*routingEntry.destinationEID = "0.0.0.0";
   routingEntry.destinationEIDMask = "0.0.0.0";
-  routingEntry.sourceIP = "9.0.0.1";
+  routingEntry.sourceIP = "9.0.0.1";~
   routingEntry.nextHopIP = "9.0.0.2";
   routingEntry.nextHopIPMask = "255.255.255.255";
   routingEntry.deviceForNextHopIP = centralNode->GetDevice(0);
