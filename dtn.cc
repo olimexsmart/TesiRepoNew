@@ -998,9 +998,9 @@ int main (int argc, char *argv[])
 {
 	//Simulator::EnableParallelSimulation(); just dream about it
 
-	nHotSpots = 16;
-	nNanosats = 24;
-	nColdSpots = 32;
+	nHotSpots = 8;
+	nNanosats = 42;
+	nColdSpots = 16;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
 	nBundles = 1000;
