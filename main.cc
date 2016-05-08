@@ -22,15 +22,6 @@ using namespace ns3;
 using namespace std;
 
 
-
-uint32_t nHotSpots;
-uint32_t nNanosats;
-uint32_t nColdSpots;
-uint32_t nRuralNodesForEachColdSpot;
-uint32_t nOrbits;
-uint32_t nBundles;
-uint32_t TOV;
-
 void PopulateArpCache(NodeContainer allIPNodes);
 
 
@@ -41,7 +32,7 @@ int main (int argc, char *argv[])
 	DTNNodesMobility* nanosatelliteNodesMobility;
 
 	nHotSpots = 8;
-	nNanosats = 16;
+	nNanosats = 42;
 	nColdSpots = 16;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
