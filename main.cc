@@ -31,6 +31,7 @@ int main (int argc, char *argv[])
 	DTNNodesMobility* groundStationsNodesMobility;
 	DTNNodesMobility* nanosatelliteNodesMobility;
 
+	/*
 	nHotSpots = 8;
 	nNanosats = 42;
 	nColdSpots = 16;
@@ -38,10 +39,10 @@ int main (int argc, char *argv[])
 	nRuralNodesForEachColdSpot = 2;
 	nBundles = 1000;
 	TOV = 3600000; //One hour in millis
-
+	 */
 	//uint32_t duration = 10*86400;	// [s] 86400 (24h)
 	uint32_t duration = 86400;	// [s] 86400 (24h)
-
+	/*
 	CommandLine cmd;
 	cmd.AddValue("nHotSpots", "Number of hot spots", nHotSpots);
 	cmd.AddValue("nColdSpots", "Number of cold spots", nColdSpots);
@@ -50,7 +51,7 @@ int main (int argc, char *argv[])
 	cmd.AddValue("nBundles", "Number of bundles for each traffic flow", nBundles);
 	cmd.AddValue("duration", "Duration of simulation", duration);
 	cmd.Parse(argc, argv);
-
+	 */
 	//Ethernet?
 	CsmaHelper csma;
 	csma.SetChannelAttribute ("DataRate", StringValue ("800Mbps"));
@@ -105,11 +106,11 @@ int main (int argc, char *argv[])
 	Creating and linking together hotspots and the central node with CSMA aka Ethernet.
 
 	From ns3 reference:
-	Typically ns-3 NetDevices are installed on nodes using a net device helper. 
-	The helper Install method takes a NodeContainer which holds some number of Ptr<Node>. 
+	Typically ns-3 NetDevices are installed on nodes using a net device helper.
+	The helper Install method takes a NodeContainer which holds some number of Ptr<Node>.
 	For each of the Nodes in the NodeContainer the helper will instantiate a net device,
-	add a MAC address and a queue to the device and install it to the node. 
-	For each of the devices, the helper also adds the device into a Container for later use by the caller. 
+	add a MAC address and a queue to the device and install it to the node.
+	For each of the devices, the helper also adds the device into a Container for later use by the caller.
 	This is that container used to hold the Ptr<NetDevice> which are instantiated by the device helper.
 	 */
 	Ptr<Node> centralNode = CreateObject<Node> ();
@@ -265,18 +266,20 @@ int main (int argc, char *argv[])
 	Ptr<DtnApp> app[1 + (uint32_t)nHotSpots + (uint32_t)nNanosats + (uint32_t)nColdSpots + ((uint32_t)nColdSpots * (uint32_t)nRuralNodesForEachColdSpot)];
 
 	//CONTACT TABLE
-	vector<ContactEntry> contactTable;
-	ContactEntry contactEntry;
-	NodeContainer allWirelessNodes;
-	allWirelessNodes.Add (hotSpotNodesContainer);
-	allWirelessNodes.Add (nanosatelliteNodesContainer);
-	allWirelessNodes.Add (coldSpotNodesContainer);
-	double t_now;
-	bool start_contact[nHotSpots + nNanosats + nColdSpots][nHotSpots + nNanosats + nColdSpots];
-	for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
-
-		//Modify as in contact table reading, this_node_address must contain the RX IP, which is not the on same interface number across different node topologies
+	if(generateContactTable) //Generate only if requested
+	{
+		vector<ContactEntry> contactTable;
+		ContactEntry contactEntry;
+		NodeContainer allWirelessNodes;
+		allWirelessNodes.Add (hotSpotNodesContainer);
+		allWirelessNodes.Add (nanosatelliteNodesContainer);
+		allWirelessNodes.Add (coldSpotNodesContainer);
+		double t_now;
+		bool start_contact[nHotSpots + nNanosats + nColdSpots][nHotSpots + nNanosats + nColdSpots];
 		for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
+
+			//Modify as in contact table reading, this_node_address must contain the RX IP, which is not the on same interface number across different node topologies
+			for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
 				if(i < nHotSpots || i >= nHotSpots+nNanosats){ //If hotspot or coldspot
 					contactEntry.this_node_address = (allWirelessNodes.Get(i)->GetObject<Ipv4>()->GetAddress(3,0)).GetLocal();
 					contactTable.push_back(contactEntry);
@@ -287,60 +290,60 @@ int main (int argc, char *argv[])
 				}
 			}
 
-		contactTable.push_back(contactEntry);
-		for (uint32_t j = 0; j < (nHotSpots+nNanosats+nColdSpots); j++)
-			start_contact[i][j] = false;
-	}
-	for (uint32_t initialcount = 1; initialcount < (duration * 100); initialcount++) { // 8640000 = [(24 x 3600 x 1000)/10ms] tens of milliseconds
-		t_now = initialcount * 10; //milliseconds
-		nanosatelliteNodesMobility->AdvancePositionNanosatellites(2 * M_PI / (double)nNanosats, nOrbits, t_now, true);
-		groundStationsNodesMobility->AdvancePositionGroundStations(t_now, true);
-		for (uint32_t i = 0; i < (nHotSpots+nNanosats+nColdSpots) ; i++) {
-			Ptr<MobilityModel> wirelessNode1Mobility = allWirelessNodes.Get(i)->GetObject<MobilityModel> ();
-			Vector position1 = wirelessNode1Mobility->GetPosition();
-			for(uint32_t j=0; j < (nHotSpots+nNanosats+nColdSpots); j++) {
-				if (((i < nHotSpots) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats)))) || ((i >= (nHotSpots+nNanosats)) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats)))) || (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && (i != j))) {			// HSs or CSs in contact with a SAT or SATs in contact with a GS or a SAT
-					Ptr<MobilityModel> wirelessNode2Mobility = allWirelessNodes.Get(j)->GetObject<MobilityModel> ();
-					Vector position2 = wirelessNode2Mobility->GetPosition();
-					double distance = wirelessNode1Mobility->GetDistanceFrom(wirelessNode2Mobility);
-					//A  threshold is defined to ensure a minimum of margin: the contact time is saved as a little bit shorter, this way there is still time for a very narrow ack for example
-					double threshold = 0;
-					if (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats))))
-						threshold = (99*TX_RANGE_WIRELESS_TRANSMISSION_NS_NS/100);
-					else
-						threshold = (99*TX_RANGE_WIRELESS_TRANSMISSION_GS_NS/100);
-					if (distance  <=  threshold) {
-						if (start_contact[i][j] == false) {
-							start_contact[i][j] = true;
-							contactTable[i].t_start.push_back(t_now);
-							//Here remains only a single line with "2", the TX IP
+			contactTable.push_back(contactEntry);
+			for (uint32_t j = 0; j < (nHotSpots+nNanosats+nColdSpots); j++)
+				start_contact[i][j] = false;
+		}
+		for (uint32_t initialcount = 1; initialcount < (duration * 100); initialcount++) { // 8640000 = [(24 x 3600 x 1000)/10ms] tens of milliseconds
+			t_now = initialcount * 10; //milliseconds
+			nanosatelliteNodesMobility->AdvancePositionNanosatellites(2 * M_PI / (double)nNanosats, nOrbits, t_now, true);
+			groundStationsNodesMobility->AdvancePositionGroundStations(t_now, true);
+			for (uint32_t i = 0; i < (nHotSpots+nNanosats+nColdSpots) ; i++) {
+				Ptr<MobilityModel> wirelessNode1Mobility = allWirelessNodes.Get(i)->GetObject<MobilityModel> ();
+				Vector position1 = wirelessNode1Mobility->GetPosition();
+				for(uint32_t j=0; j < (nHotSpots+nNanosats+nColdSpots); j++) {
+					if (((i < nHotSpots) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats)))) || ((i >= (nHotSpots+nNanosats)) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats)))) || (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && (i != j))) {			// HSs or CSs in contact with a SAT or SATs in contact with a GS or a SAT
+						Ptr<MobilityModel> wirelessNode2Mobility = allWirelessNodes.Get(j)->GetObject<MobilityModel> ();
+						Vector position2 = wirelessNode2Mobility->GetPosition();
+						double distance = wirelessNode1Mobility->GetDistanceFrom(wirelessNode2Mobility);
+						//A  threshold is defined to ensure a minimum of margin: the contact time is saved as a little bit shorter, this way there is still time for a very narrow ack for example
+						double threshold = 0;
+						if (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats))))
+							threshold = (99*TX_RANGE_WIRELESS_TRANSMISSION_NS_NS/100);
+						else
+							threshold = (99*TX_RANGE_WIRELESS_TRANSMISSION_GS_NS/100);
+						if (distance  <=  threshold) {
+							if (start_contact[i][j] == false) {
+								start_contact[i][j] = true;
+								contactTable[i].t_start.push_back(t_now);
+								//Here remains only a single line with "2", the TX IP
 
-							contactTable[i].node_in_contact_with.push_back(allWirelessNodes.Get(j)->GetObject<Ipv4>()->GetAddress(2,0).GetLocal());
+								contactTable[i].node_in_contact_with.push_back(allWirelessNodes.Get(j)->GetObject<Ipv4>()->GetAddress(2,0).GetLocal());
 
+							}
 						}
-					}
-					else {
-						if (start_contact[i][j] == true) {
-							stringstream contactFile;
-							contactFile << "/home/tesista/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
-							string tmp = contactFile.str();
-							const char* reportName = tmp.c_str();
-							ofstream report;
-							report.open(reportName, ios::out | ios::app | ios::binary);
-							report.setf(ios_base::fixed);
-							start_contact[i][j] = false;
-							contactTable[i].t_end.push_back(t_now);
-							report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << (long)((*(contactTable[i].t_end.end() - 1) / 1000.0 - *(contactTable[i].t_start.end() - 1) / 1000.0) * TX_RATE_WIRELESS_LINK) << " " << initialcount / duration << "%" <<"\n";
-							report.close ();
+						else {
+							if (start_contact[i][j] == true) {
+								stringstream contactFile;
+								contactFile << "/home/tesista/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
+								string tmp = contactFile.str();
+								const char* reportName = tmp.c_str();
+								ofstream report;
+								report.open(reportName, ios::out | ios::app | ios::binary);
+								report.setf(ios_base::fixed);
+								start_contact[i][j] = false;
+								contactTable[i].t_end.push_back(t_now);
+								report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << (long)((*(contactTable[i].t_end.end() - 1) / 1000.0 - *(contactTable[i].t_start.end() - 1) / 1000.0) * TX_RATE_WIRELESS_LINK) << " " << initialcount / duration << "%" <<"\n";
+								report.close ();
+							}
 						}
 					}
 				}
 			}
 		}
+		groundStationsNodesMobility->SetInitialPositionGroundStations(hotSpotNodesContainer, coldSpotNodesContainer, nHotSpots, nColdSpots, false);
+		nanosatelliteNodesMobility->SetInitialPositionNanosatellites(nanosatelliteNodesContainer, nOrbits, false);
 	}
-	groundStationsNodesMobility->SetInitialPositionGroundStations(hotSpotNodesContainer, coldSpotNodesContainer, nHotSpots, nColdSpots, false);
-	nanosatelliteNodesMobility->SetInitialPositionNanosatellites(nanosatelliteNodesContainer, nOrbits, false);
-
 
 	// CENTRAL NODE
 	Ptr<Socket> receivingTCPSocket;
@@ -604,7 +607,7 @@ int main (int argc, char *argv[])
 
 	// READING CONTACT TABLE
 	//Getting ready to read contact table file
-/*	stringstream contactFile;
+	stringstream contactFile;
 	contactFile << "/home/tesista/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
 	string contact = contactFile.str();
 	const char* contactFileName = contact.c_str();
@@ -661,27 +664,29 @@ int main (int argc, char *argv[])
 
 	for (uint32_t i = 0; i < (nHotSpots + nNanosats + nColdSpots + 1); i++)
 		app[i]->contactTable = contactTable;
-*/
-	Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/AckTimeout", TimeValue (MilliSeconds (100)));
 
-	/*
-	This is almost the end of the main: the remaining thing to do is to Schedule the first 
-	occurence of the Simulation in order to start it. Specifically creating Bundles, according to the simlation needs.
-	 */
-	// Bundle transmission
-	for (uint32_t count = 1; count <= nBundles; count++) {
-//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2");
-//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "12.0.0.2");
-//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "13.0.0.2");
-//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "14.0.0.2");
-		//Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[(uint32_t)nHotSpots+(uint32_t)nNanosats+(uint32_t)nColdSpots+1], "9.0.0.1");
-	}
+	Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/AckTimeout", TimeValue (MilliSeconds (100)));
 
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
 	for (uint32_t i = 0; i < nColdSpots; i++)
 		allIPNodes.Add(ruralNetworkNodesContainers[i]);
 
 	PopulateArpCache(allIPNodes);
+
+	/*
+	This is almost the end of the main: the remaining thing to do is to Schedule the first 
+	occurence of the Simulation in order to start it. Specifically creating Bundles, according to the simlation needs.
+	 */
+	// Bundle transmission
+	/* This is moved into SimulationConfigurator
+	for (uint32_t count = 1; count <= nBundles; count++) {
+		//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2");
+		//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "12.0.0.2");
+		//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "13.0.0.2");
+		//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "14.0.0.2");
+		//Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[(uint32_t)nHotSpots+(uint32_t)nNanosats+(uint32_t)nColdSpots+1], "9.0.0.1");
+	}
+*/
 
 	Simulator::Stop (Seconds (duration));
 	Simulator::Run ();
@@ -725,3 +730,5 @@ void PopulateArpCache (NodeContainer allIPNodes) {
 		}
 	}
 }
+
+

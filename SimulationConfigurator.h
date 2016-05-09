@@ -20,18 +20,18 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-*/
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
 
 class SimulationConfigurator
 {
-	public:
+public:
 	//All get of fields below
 	bool LoadConfiguration(const char * path);
 
-	private:
+private:
 	uint32_t nHotSpots;
 	uint32_t nNanosats;
 	uint32_t nColdSpots;

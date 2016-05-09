@@ -115,6 +115,9 @@ public:
 	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > allPaths);
 	int GetNodeType(Ipv4Address address);
 	bool CheckContact(uint32_t volumeRemaining, uint32_t SOB);
+	void Setup(bool generateContactTable);
+	void PopulateArpCache (NodeContainer allIPNodes);
+	void SetNetworkConfiguration(uint32_t nHotSpots, uint32_t nNanosats, uint32_t nColdSpots, uint32_t nRuralNodesForEachColdSpot, uint32_t nOrbits);
 
 
 private:
@@ -133,6 +136,12 @@ private:
 	Ipv4Address nodeInContactWithTxAddress;
 	Ipv4Address nodeInContactWithRxAddress;
 	uint32_t maximumNumberBundlesInCurrentContact;
+
+	uint32_t nHotSpots;
+	uint32_t nNanosats;
+	uint32_t nColdSpots;
+	uint32_t nRuralNodesForEachColdSpot;
+	uint32_t nOrbits;
 };
 
 

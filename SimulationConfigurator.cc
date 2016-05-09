@@ -28,14 +28,14 @@ SimulationConfigurator :: SimulationConfigurator(){
 bool SimulationConfigurator :: LoadConfiguration(const char * path){
 	FILE *f = fopen(path, "r");
 
-		if(f == NULL) return false;
+	if(f == NULL) return false;
 
-		char buffer[250];
-		char c;
+	char buffer[250];
+	char c;
 
-		while(c != EOF){
-			c = fgetc(f);
+	while(c != EOF){
+		c = fgetc(f);
 
-		}
+	}
 }
 

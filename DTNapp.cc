@@ -319,7 +319,7 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 			  starting from the destination node. Because of this, the next hop address is a
 			  TX IP. That's not good because for the next call of SCGR or to save it in the
 			  path vector we need a RX IP. So here we are ADDRESSING ;) this issue.
-			*/
+		 */
 			Ipv4Address nextHop = contactTable[thisNode].node_in_contact_with[k];
 			uint8_t* addr = new uint8_t[4];
 			nextHop.Serialize(addr);
@@ -864,5 +864,17 @@ void DtnApp::UpdateContactInformation(Ptr<Packet> bufferInfo) {
 	CheckWirelessBuffer(bndlHeader.GetOrigin(), maximumNumberBundlesInCurrentContact);
 }
 
+void DtnApp::SetNetworkConfiguration(uint32_t nHotSpots, uint32_t nNanosats, uint32_t nColdSpots, uint32_t nRuralNodesForEachColdSpot, uint32_t nOrbits){
+	this->nHotSpots = nHotSpots;
+	this->nColdSpots = nColdSpots;
+	this->nNanosats = nNanosats;
+	this->nRuralNodesForEachColdSpot = nRuralNodesForEachColdSpot;
+	this->nOrbits = nOrbits;
+}
 
+bool FileExist(const char *fileName)
+{
+    std::ifstream infile(fileName);
+    return infile.good();
+}
 
