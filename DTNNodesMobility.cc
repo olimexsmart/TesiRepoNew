@@ -24,7 +24,7 @@ using namespace ns3;
 
 void DTNNodesMobility::SetInitialPositionNanosatellites(NodeContainer nanosatellitesContainer, uint32_t nOrbits, bool firstTime) {
 	stringstream fileName;
-	fileName << "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/COORDINATE NANOSATELLITES.txt";
+	fileName << "/home/olli/ns-allinone-3.21/ns-3.21/Temp/COORDINATE NANOSATELLITES.txt";
 	string tmp = fileName.str();
 	const char* reportName = tmp.c_str();
 	ofstream report;
@@ -49,7 +49,7 @@ void DTNNodesMobility::SetInitialPositionNanosatellites(NodeContainer nanosatell
 
 void DTNNodesMobility::SetInitialPositionGroundStations(NodeContainer hotSpotNodesContainer, NodeContainer coldSpotNodesContainer, double nHotSpots, double nColdSpots, bool firstTime) {
 	stringstream contactFile;
-	contactFile << "/home/tesista/Contact_Tables/Coordinate_" << nHotSpots << "_HSs_" << nColdSpots << "_CSs.txt";
+	contactFile << "/home/olli/ns-allinone-3.21/ns-3.21/Contact_Tables/Coordinate_" << nHotSpots << "_HSs_" << nColdSpots << "_CSs.txt";
 	string contact = contactFile.str();
 	const char* contactFileName = contact.c_str();
 	ifstream contactReport;
@@ -89,7 +89,7 @@ void DTNNodesMobility::AdvancePositionNanosatellites(double initialphi, uint32_t
 	uint32_t updateCont = t_now / (SAT_POSITION_UPDATE_TIME * 1000);
 	double beta, phi;
 	stringstream fileName;
-	fileName << "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Coordinate SAT1.txt";
+	fileName << "/home/olli/ns-allinone-3.21/ns-3.21/Temp/Coordinate SAT1.txt";
 	string tmp = fileName.str();
 	const char* reportName = tmp.c_str();
 	ofstream report;
@@ -114,7 +114,7 @@ void DTNNodesMobility::AdvancePositionNanosatellites(double initialphi, uint32_t
 
 void DTNNodesMobility::AdvancePositionGroundStations(uint32_t t_now, bool preSimulation) {
 	stringstream fileName;
-	fileName << "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Coordinate HS1.txt";
+	fileName << "/home/olli/ns-allinone-3.21/ns-3.21/Temp/Coordinate HS1.txt";
 	string tmp = fileName.str();
 	const char* reportName = tmp.c_str();
 	ofstream report;
