@@ -114,7 +114,7 @@ public:
 
 	//Prototypes of new functions
 	vector<mypacket::BndlPath> FindPath(vector<ContactEntry> contactTable, Ipv4Address destinationAddress, uint32_t TOV, uint32_t SOB);
-	void SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, vector<ContactEntry> contactTable, Ipv4Address destAddress, double TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere);
+	void SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, vector<ContactEntry> contactTable, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere);
 	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > allPaths);
 	int GetNodeType(Ipv4Address address);
 	bool CheckContact(uint32_t volumeRemaining, uint32_t SOB);
@@ -422,9 +422,9 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable,
 	SCGR with all possible paths. Lastly the final decision on the 
 	path will be taken by a separate function.
  */
-void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, vector<ContactEntry> contactTable, Ipv4Address destAddress, double TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere){
+void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, vector<ContactEntry> contactTable, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere){
 	//Routine here to find the entry in the contactTable starting from an IP address
-	int thisNode; //Holds the index of the contact table corresponding to the node considered in this call
+	uint32_t thisNode; //Holds the index of the contact table corresponding to the node considered in this call
 	for(thisNode = 0; thisNode < contactTable.size(); thisNode++)
 		if(contactTable[thisNode].this_node_address == destAddress)
 			break;
@@ -433,12 +433,12 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 	vector<mypacket::BndlPath> newPath;
 
 	//Now we need to select contacts between now and TOV of the current node
-	int tStart;
-	int tEnd;
+	uint32_t tStart;
+	uint32_t tEnd;
 	for(tStart = 0; contactTable[thisNode].t_start[tStart] < Simulator::Now (); tStart ++);
 	for(tEnd = 0; contactTable[thisNode].t_end[tEnd] < TOV; tEnd ++);
 
-	for(int k = tStart; k < tEnd; k++)
+	for(uint32_t k = tStart; k < tEnd; k++)
 	{
 		newPath = untilHere; //Reset the path at every hop selection, be sure this simply doesn't create a reference copy
 		if(CheckContact(contactTable[thisNode].volumeTraffic[k], SOB)) //Check if this contact is usable
@@ -997,10 +997,11 @@ void DtnApp::UpdateContactInformation(Ptr<Packet> bufferInfo) {
 int main (int argc, char *argv[])
 {
 	//Simulator::EnableParallelSimulation(); just dream about it
+	cout << "Started\n";
 
-	nHotSpots = 8;
-	nNanosats = 16;
-	nColdSpots = 16;
+	nHotSpots = 16;
+	nNanosats = 24;
+	nColdSpots = 32;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
 	nBundles = 1000;
@@ -1232,6 +1233,7 @@ int main (int argc, char *argv[])
 	Ptr<DtnApp> app[1 + (uint32_t)nHotSpots + (uint32_t)nNanosats + (uint32_t)nColdSpots + ((uint32_t)nColdSpots * (uint32_t)nRuralNodesForEachColdSpot)];
 
 	//CONTACT TABLE
+	/*
 	vector<ContactEntry> contactTable;
 	ContactEntry contactEntry;
 	NodeContainer allWirelessNodes;
@@ -1307,7 +1309,7 @@ int main (int argc, char *argv[])
 	}
 	groundStationsNodesMobility->SetInitialPositionGroundStations(hotSpotNodesContainer, coldSpotNodesContainer, nHotSpots, nColdSpots, false);
 	nanosatelliteNodesMobility->SetInitialPositionNanosatellites(nanosatelliteNodesContainer, nOrbits, false);
-
+*/
 
 	// CENTRAL NODE
 	Ptr<Socket> receivingTCPSocket;
@@ -1570,8 +1572,9 @@ int main (int argc, char *argv[])
 	}
 
 	// READING CONTACT TABLE
+	cout << "Started reading contact table\n";
 	//Getting ready to read contact table file
-/*	stringstream contactFile;
+	stringstream contactFile;
 	contactFile << "/home/tesista/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
 	string contact = contactFile.str();
 	const char* contactFileName = contact.c_str();
@@ -1614,7 +1617,7 @@ int main (int argc, char *argv[])
 			string address = tmp.str();
 			//Actually compare the read address and if this is the right entry add the remaining information
 			if (destinationAddress == address) {
-				Simulator::Schedule(MilliSeconds((uint32_t)startContactTime), &DtnApp::CheckWirelessBuffer, app[i+1], Ipv4Address(destinationAddress.c_str()), true, (floor((double)((uint32_t)endContactTime - (uint32_t)startContactTime) / 1000 * TX_RATE_WIRELESS_LINK / BUNDLEDATASIZE)));
+				Simulator::Schedule(MilliSeconds((uint32_t)startContactTime), &DtnApp::CheckWirelessBuffer, app[i+1], Ipv4Address(destinationAddress.c_str()), (floor((double)((uint32_t)endContactTime - (uint32_t)startContactTime) / 1000 * TX_RATE_WIRELESS_LINK / BUNDLEDATASIZE)));
 				Simulator::Schedule(MilliSeconds((uint32_t)endContactTime), &DtnApp::StopWirelessTransmission, app[i+1], Ipv4Address(destinationAddress.c_str()));
 				contactTable[i].t_start.push_back(startContactTime);
 				contactTable[i].t_end.push_back(endContactTime);
@@ -1628,14 +1631,21 @@ int main (int argc, char *argv[])
 
 	for (uint32_t i = 0; i < (nHotSpots + nNanosats + nColdSpots + 1); i++)
 		app[i]->contactTable = contactTable;
-*/
+
+	cout << "Done reading contact table.\n";
+
 	Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/AckTimeout", TimeValue (MilliSeconds (100)));
+
 
 	/*
 	This is almost the end of the main: the remaining thing to do is to Schedule the first 
 	occurence of the Simulation in order to start it. Specifically creating Bundles, according to the simlation needs.
 	 */
 	// Bundle transmission
+
+	Ipv4Address yo("11.0.0.2");
+	Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "11.0.0.2", contactTable, 100000);
+	/*
 	for (uint32_t count = 1; count <= nBundles; count++) {
 //		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2");
 //		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "12.0.0.2");
@@ -1643,6 +1653,7 @@ int main (int argc, char *argv[])
 //		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "14.0.0.2");
 		//Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[(uint32_t)nHotSpots+(uint32_t)nNanosats+(uint32_t)nColdSpots+1], "9.0.0.1");
 	}
+*/
 
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
 	for (uint32_t i = 0; i < nColdSpots; i++)
