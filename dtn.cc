@@ -633,7 +633,7 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 	receivedBundle->PeekHeader(bndlHeader);
 	if (bndlHeader.GetBundleType() == 0) {
 		stringstream fileName;
-		fileName <<  "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Received_by_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+		fileName <<  "/home/olli/ns-allinone-3.21/ns-3.21/Temp/Received_by_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 		string tmp = fileName.str();
 		const char* reportName = tmp.c_str();
 		ofstream report;
@@ -751,7 +751,7 @@ bool DtnApp::isTransmissionPossibleIntersatellite (Ipv4Address nodeInContactWith
 
 void DtnApp::PrintNanosatelliteBufferOccupancy() {
 	stringstream fileName;
-	fileName << "/home/tesista/ns-allinone-3.21/source/ns-3.21/Temp/Buffer_Occupancy_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+	fileName << "/home/olli/ns-allinone-3.21/ns-3.21/Temp/Buffer_Occupancy_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 	string tmp = fileName.str();
 	const char* reportName = tmp.c_str();
 	ofstream report;
@@ -926,7 +926,7 @@ void DtnApp::SendBundle (Ptr<Packet> transmittingBundle, RoutingEntry routingEnt
 	}
 	if (bndlHeader.GetBundleType() == 0) {
 		stringstream fileName;
-		fileName << "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Sent_by_"  << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+		fileName << "/home/olli/ns-allinone-3.21/ns-3.21/Temp/Sent_by_"  << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 		string tmp = fileName.str();
 		const char* reportName = tmp.c_str();
 		ofstream report;
@@ -998,6 +998,7 @@ int main (int argc, char *argv[])
 {
 	//Simulator::EnableParallelSimulation(); just dream about it
 	cout << "Started\n";
+
 
 	nHotSpots = 16;
 	nNanosats = 24;
@@ -1240,8 +1241,10 @@ int main (int argc, char *argv[])
 	allWirelessNodes.Add (hotSpotNodesContainer);
 	allWirelessNodes.Add (nanosatelliteNodesContainer);
 	allWirelessNodes.Add (coldSpotNodesContainer);
+
 	double t_now;
 	bool start_contact[nHotSpots + nNanosats + nColdSpots][nHotSpots + nNanosats + nColdSpots];
+
 	for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
 
 		//Modify as in contact table reading, this_node_address must contain the RX IP, which is not the on same interface number across different node topologies
@@ -1291,7 +1294,7 @@ int main (int argc, char *argv[])
 					else {
 						if (start_contact[i][j] == true) {
 							stringstream contactFile;
-							contactFile << "/home/tesista/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
+							contactFile << "/home/olli/ns-allinone-3.21/ns-3.21/Contact_Tables/" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
 							string tmp = contactFile.str();
 							const char* reportName = tmp.c_str();
 							ofstream report;
@@ -1299,7 +1302,9 @@ int main (int argc, char *argv[])
 							report.setf(ios_base::fixed);
 							start_contact[i][j] = false;
 							contactTable[i].t_end.push_back(t_now);
-							report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << (long)((*(contactTable[i].t_end.end() - 1) / 1000.0 - *(contactTable[i].t_start.end() - 1) / 1000.0) * TX_RATE_WIRELESS_LINK) << " " << initialcount / duration << "%" <<"\n";
+							report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << (long)((*(contactTable[i].t_end.end() - 1) / 1000.0 - *(contactTable[i].t_start.end() - 1) / 1000.0) * TX_RATE_WIRELESS_LINK) << "\n";
+							//Update on the progress
+							cout << " " << initialcount / duration << "% ";
 							report.close ();
 						}
 					}
@@ -1309,7 +1314,9 @@ int main (int argc, char *argv[])
 	}
 	groundStationsNodesMobility->SetInitialPositionGroundStations(hotSpotNodesContainer, coldSpotNodesContainer, nHotSpots, nColdSpots, false);
 	nanosatelliteNodesMobility->SetInitialPositionNanosatellites(nanosatelliteNodesContainer, nOrbits, false);
+
 */
+
 
 	// CENTRAL NODE
 	Ptr<Socket> receivingTCPSocket;
