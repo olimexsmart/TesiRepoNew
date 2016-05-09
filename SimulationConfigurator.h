@@ -22,6 +22,9 @@
 #include <sstream>
 */
 
+#include <stdlib.h>
+#include <stdio.h>
+
 class SimulationConfigurator
 {
 	public:
@@ -34,8 +37,7 @@ class SimulationConfigurator
 	uint32_t nColdSpots;
 	uint32_t nRuralNodesForEachColdSpot;
 	uint32_t nOrbits;
-	uint32_t nBundles;
-	uint32_t TOV;
+	uint32_t duration;
 
 	char * inputFiles;
 	char * tempFiles;
