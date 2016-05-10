@@ -435,7 +435,8 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 	//Now we need to select contacts between now and TOV of the current node
 	uint32_t tStart;
 	uint32_t tEnd;
-	for(tStart = 0; contactTable[thisNode].t_start[tStart] < Simulator::Now (); tStart ++);
+	uint32_t tnow = Simulator::Now ().GetMilliSeconds();
+	for(tStart = 0; contactTable[thisNode].t_start[tStart] < tnow; tStart ++);
 	for(tEnd = 0; contactTable[thisNode].t_end[tEnd] < TOV; tEnd ++);
 
 	for(uint32_t k = tStart; k < tEnd; k++)
@@ -633,7 +634,7 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 	receivedBundle->PeekHeader(bndlHeader);
 	if (bndlHeader.GetBundleType() == 0) {
 		stringstream fileName;
-		fileName <<  "/home/olli/ns-allinone-3.21/ns-3.21/Temp/Received_by_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+		fileName <<  "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Received_by_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 		string tmp = fileName.str();
 		const char* reportName = tmp.c_str();
 		ofstream report;
@@ -751,7 +752,7 @@ bool DtnApp::isTransmissionPossibleIntersatellite (Ipv4Address nodeInContactWith
 
 void DtnApp::PrintNanosatelliteBufferOccupancy() {
 	stringstream fileName;
-	fileName << "/home/olli/ns-allinone-3.21/ns-3.21/Temp/Buffer_Occupancy_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+	fileName << "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Buffer_Occupancy_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 	string tmp = fileName.str();
 	const char* reportName = tmp.c_str();
 	ofstream report;
@@ -926,7 +927,7 @@ void DtnApp::SendBundle (Ptr<Packet> transmittingBundle, RoutingEntry routingEnt
 	}
 	if (bndlHeader.GetBundleType() == 0) {
 		stringstream fileName;
-		fileName << "/home/olli/ns-allinone-3.21/ns-3.21/Temp/Sent_by_"  << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+		fileName << "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Sent_by_"  << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 		string tmp = fileName.str();
 		const char* reportName = tmp.c_str();
 		ofstream report;
@@ -1294,7 +1295,7 @@ int main (int argc, char *argv[])
 					else {
 						if (start_contact[i][j] == true) {
 							stringstream contactFile;
-							contactFile << "/home/olli/ns-allinone-3.21/ns-3.21/Contact_Tables/" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
+							contactFile << "/home/tesista/Contact_Tables/" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
 							string tmp = contactFile.str();
 							const char* reportName = tmp.c_str();
 							ofstream report;
@@ -1650,8 +1651,8 @@ int main (int argc, char *argv[])
 	 */
 	// Bundle transmission
 
-	Ipv4Address yo("11.0.0.2");
-	Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "11.0.0.2", contactTable, 100000);
+
+	Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "50.0.0.70", contactTable, 40000000);
 	/*
 	for (uint32_t count = 1; count <= nBundles; count++) {
 //		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2");
