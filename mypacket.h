@@ -13,7 +13,7 @@
 #include "ns3/internet-module.h"
 
 
-#define BUNDLEHEADERSIZE 21			// size bundle header
+#define BUNDLEHEADERSIZE 22			// size bundle header
 #define BUNDLEFRAGMENTHEADERSIZE 2		// size fragment header
 
 #define PAYLOADSIZE 50000				// size bundle payload

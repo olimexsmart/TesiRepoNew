@@ -85,7 +85,7 @@ public:
 
 	//Function prototypes
 	void CheckWiredBuffer();
-	void CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, uint32_t maximumNumberBundlesInCurrentContact);
+	void CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime, uint32_t maximumNumberBundlesInCurrentContact);
 	//void DeleteAllActiveWirelessSockets();
 	void CloseTxSocket(Ptr<Socket> socket, uint32_t packet_size);
 	void ConnectionAccept(Ptr<Socket>, const Address& from);
@@ -165,6 +165,7 @@ void DtnApp::CheckWiredBuffer() {
 
 		//Verify it's a bundle from a central node (9.0.0.1)
 		//If true, overwrite nexthop ip, reading it from the path vector
+
 		if((m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() == "9.0.0.1")
 			routingEntryFound.nextHopIP = bndlHeader.GetPathVector()[0].GetNodeAddress();
 
@@ -194,9 +195,14 @@ void DtnApp::CheckWiredBuffer() {
 	The RoutingEntry construct is not quite useful any more, but is still used to avoid extensive
 	modifications to the code.
  */
-void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, uint32_t maximumNumberBundlesInCurrentContact) {
-
+void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime, uint32_t maximumNumberBundlesInCurrentContact)
+{
 	bool send = false;
+
+	if (firstTime == true){
+		dataSentDuringThisContact = 0;
+		contactInProgress = true;
+	}
 
 	if (stored_wireless_bundles.size() != 0) {
 		bool bundleNotData = false;
@@ -289,7 +295,7 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, u
 					sent = true;
 					transmissionInProgress = true;
 					if (bndlHeader.GetBundleType() == 0)
-						Simulator::Schedule (Seconds ((double) bundleSize / TX_RATE_WIRELESS_LINK), &DtnApp::CheckWirelessBuffer, this, nodeInContactWithWirelessAddress, maximumNumberBundlesInCurrentContact);
+						Simulator::Schedule (Seconds ((double) bundleSize / TX_RATE_WIRELESS_LINK), &DtnApp::CheckWirelessBuffer, this, nodeInContactWithWirelessAddress, false, maximumNumberBundlesInCurrentContact);
 					stored_wireless_bundles.erase(iter);
 					break;
 				}
@@ -359,7 +365,7 @@ void DtnApp::CreateBundleAck (Ipv4Address sourceAddress, uint32_t bundleSeqNumbe
 	bndlHeader.SetSrcTimestamp (Simulator::Now ());
 	ack->AddHeader (bndlHeader);
 	stored_wireless_bundles.insert(stored_wireless_bundles.begin(), ack);
-	CheckWirelessBuffer(nodeInContactWithTxAddress, maximumNumberBundlesInCurrentContact);
+	CheckWirelessBuffer(nodeInContactWithTxAddress, false, maximumNumberBundlesInCurrentContact);
 }
 
 void DtnApp::CreateBundleData (Ipv4Address destinationAddress, vector<ContactEntry> contactTable, uint32_t TOV) {
@@ -583,7 +589,7 @@ void DtnApp::CreateBundleStatusBuffer() {
 	bndlHeader.SetSrcTimestamp (Simulator::Now ());
 	bundleInfo->AddHeader (bndlHeader);
 	stored_wireless_bundles.insert(stored_wireless_bundles.begin(), bundleInfo);
-	CheckWirelessBuffer(nodeInContactWithRxAddress, maximumNumberBundlesInCurrentContact);
+	CheckWirelessBuffer(nodeInContactWithRxAddress, false, maximumNumberBundlesInCurrentContact);
 	delete [] coldSpotAddress;
 	delete [] payload;
 }
@@ -659,7 +665,7 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 			stored_wireless_bundles.push_back(receivedBundle->Copy());
 			//Schedule a new wireless communication in case there isn't one going on and the contact is still active
 			if (contactInProgress && !transmissionInProgress)
-				CheckWirelessBuffer(nodeInContactWithRxAddress, maximumNumberBundlesInCurrentContact);
+				CheckWirelessBuffer(nodeInContactWithRxAddress, false, maximumNumberBundlesInCurrentContact);
 		}
 	}
 }
@@ -992,7 +998,7 @@ void DtnApp::UpdateContactInformation(Ptr<Packet> bufferInfo) {
 	delete [] payload;
 	delete [] cSAddress;
 	delete [] storedBundlesSize;
-	CheckWirelessBuffer(bndlHeader.GetOrigin(), maximumNumberBundlesInCurrentContact);
+	CheckWirelessBuffer(bndlHeader.GetOrigin(), false, maximumNumberBundlesInCurrentContact);
 }
 
 int main (int argc, char *argv[])
@@ -1353,14 +1359,14 @@ int main (int argc, char *argv[])
 		routingEntry.deviceType = 0;
 		app[0]->SetRoutingEntry(routingEntry);
 	}
-	/*routingEntry.destinationEID = "0.0.0.0";
+	routingEntry.destinationEID = "0.0.0.0";
   routingEntry.destinationEIDMask = "0.0.0.0";
-  routingEntry.sourceIP = "9.0.0.1";~
+  routingEntry.sourceIP = "9.0.0.1";
   routingEntry.nextHopIP = "9.0.0.2";
   routingEntry.nextHopIPMask = "255.255.255.255";
   routingEntry.deviceForNextHopIP = centralNode->GetDevice(0);
   routingEntry.deviceType = 0;
-  app[0]->SetRoutingEntry(routingEntry);*/
+  app[0]->SetRoutingEntry(routingEntry);
 
 	// HOT SPOTS
 	Ptr<Socket> receivingUDPSocket1;
@@ -1625,8 +1631,8 @@ int main (int argc, char *argv[])
 			string address = tmp.str();
 			//Actually compare the read address and if this is the right entry add the remaining information
 			if (destinationAddress == address) {
-				Simulator::Schedule(MilliSeconds((uint32_t)startContactTime), &DtnApp::CheckWirelessBuffer, app[i+1], Ipv4Address(destinationAddress.c_str()), (floor((double)((uint32_t)endContactTime - (uint32_t)startContactTime) / 1000 * TX_RATE_WIRELESS_LINK / BUNDLEDATASIZE)));
-				Simulator::Schedule(MilliSeconds((uint32_t)endContactTime), &DtnApp::StopWirelessTransmission, app[i+1], Ipv4Address(destinationAddress.c_str()));
+				Simulator::Schedule(MilliSeconds((uint32_t)startContactTime), &DtnApp::CheckWirelessBuffer, app[i+1], Ipv4Address(sourceAddress.c_str()), true, (floor((double)((uint32_t)endContactTime - (uint32_t)startContactTime) / 1000 * TX_RATE_WIRELESS_LINK / BUNDLEDATASIZE)));
+				Simulator::Schedule(MilliSeconds((uint32_t)endContactTime), &DtnApp::StopWirelessTransmission, app[i+1], Ipv4Address(sourceAddress.c_str()));
 				contactTable[i].t_start.push_back(startContactTime);
 				contactTable[i].t_end.push_back(endContactTime);
 				contactTable[i].node_in_contact_with.push_back(Ipv4Address(sourceAddress.c_str()));
@@ -1652,7 +1658,7 @@ int main (int argc, char *argv[])
 	// Bundle transmission
 
 
-	Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "50.0.0.70", contactTable, 40000000);
+	Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "50.0.0.70", contactTable, 10000000);
 	/*
 	for (uint32_t count = 1; count <= nBundles; count++) {
 //		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2");

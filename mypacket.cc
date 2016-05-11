@@ -20,30 +20,23 @@ namespace ns3
     
     NS_OBJECT_ENSURE_REGISTERED (BndlHeader);
     
-    TypeId
-    BndlHeader::GetTypeId ()
+    TypeId BndlHeader::GetTypeId ()
     {
-      static TypeId tid = TypeId ("ns3::mypacket::BndlHeader")
-	.SetParent<Header> ()
-	.AddConstructor<BndlHeader> ()
-	;
+      static TypeId tid = TypeId ("ns3::mypacket::BndlHeader").SetParent<Header> ().AddConstructor<BndlHeader> ();
       return tid;
     }
     
-    TypeId
-    BndlHeader::GetInstanceTypeId () const
+    TypeId BndlHeader::GetInstanceTypeId () const
     {
       return GetTypeId ();
     }
     
-    uint32_t
-    BndlHeader::GetSerializedSize () const
+    uint32_t BndlHeader::GetSerializedSize () const
     {
-      return BUNDLEHEADERSIZE;
+      return BUNDLEHEADERSIZE + 8 * m_path.size();
     }
     
-    void
-    BndlHeader::Serialize (Buffer::Iterator i) const
+    void BndlHeader::Serialize (Buffer::Iterator i) const
     {
       i.WriteU8((uint8_t)m_bundleType);
       WriteTo (i, m_dst);
@@ -51,10 +44,16 @@ namespace ns3
       i.WriteHtonU32 (m_originSeqNo);
       i.WriteHtonU32 (m_payloadSize);
       i.WriteHtonU32 (m_srcTimestamp);
+      //Serializing path structure, starting from beginning
+      i.WriteU8(m_path.size());
+      for(int k = 0; k < m_path.size(); k++)
+      {
+    	  WriteTo(i, this->GetPathVector()[k].GetNodeAddress());
+    	  i.WriteHtonU32(this->GetPathVector()[k].GetContactTime());
+      }
     }
     
-    uint32_t
-    BndlHeader::Deserialize (Buffer::Iterator start)
+    uint32_t BndlHeader::Deserialize (Buffer::Iterator start)
     {
       Buffer::Iterator i = start;
       m_bundleType = i.ReadU8();
@@ -63,14 +62,24 @@ namespace ns3
       m_originSeqNo = i.ReadNtohU32 ();
       m_payloadSize = i.ReadNtohU32 ();
       m_srcTimestamp = i.ReadNtohU32 ();
+      //Deserializing path structure, each read bit is already in order
+      vector<mypacket::BndlPath> buff;
+      uint8_t len = i.ReadU8();
+      for(int k = 0; k < len; k++)
+      {
+    	  Ipv4Address a;
+    	  ReadFrom(i, a);
+    	  mypacket::BndlPath b(i.ReadNtohU32(), a);
+    	  buff.push_back(b);
+      }
+      m_path = buff;
       
       uint32_t dist = i.GetDistanceFrom (start);
       NS_ASSERT (dist == GetSerializedSize ());
       return dist;
     }
     
-    void
-    BndlHeader::Print (ostream &os) const
+    void BndlHeader::Print (ostream &os) const
     {
       os << "bundle type " << m_bundleType
      << "Destination: ipv4 " << m_dst
@@ -80,28 +89,24 @@ namespace ns3
 	 << " source timestamp " << m_srcTimestamp;
     }
 
-    void
-    BndlHeader::SetSrcTimestamp (Time t)
+    void BndlHeader::SetSrcTimestamp (Time t)
     {
       m_srcTimestamp = t.GetMilliSeconds ();
     }
     
-    Time
-    BndlHeader::GetSrcTimestamp () const
+    Time BndlHeader::GetSrcTimestamp () const
     {
       Time t (MilliSeconds (m_srcTimestamp));
       return t;
     }   
     
-    ostream &
-    operator<< (ostream & os, BndlHeader const & h)
+    ostream & operator<< (ostream & os, BndlHeader const & h)
     {
       h.Print (os);
       return os;
     }
     
-    bool
-    BndlHeader::operator== (BndlHeader const & o) const
+    bool BndlHeader::operator== (BndlHeader const & o) const
     {
       return (m_bundleType == o.m_bundleType &&
     	  m_dst == o.m_dst &&
@@ -124,10 +129,7 @@ namespace ns3
 
     TypeId BndlFragmentHeader::GetTypeId ()
         {
-          static TypeId tid = TypeId ("ns3::mypacket::BndlFragmentHeader")
-    	.SetParent<Header> ()
-    	.AddConstructor<BndlFragmentHeader> ()
-    	;
+          static TypeId tid = TypeId ("ns3::mypacket::BndlFragmentHeader").SetParent<Header> ().AddConstructor<BndlFragmentHeader> ();
           return tid;
         }
 
