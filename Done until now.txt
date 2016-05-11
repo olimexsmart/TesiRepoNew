@@ -46,3 +46,6 @@ the path vector and route the bundle
 
 4 Maggio
 -
+
+10/11 Maggio
+-Moving along with debugger correcting errors

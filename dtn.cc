@@ -198,6 +198,8 @@ void DtnApp::CheckWiredBuffer() {
 void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime, uint32_t maximumNumberBundlesInCurrentContact)
 {
 	bool send = false;
+	uint32_t now = Simulator :: Now().GetMilliSeconds();
+	Ipv4Address thisNode = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
 
 	if (firstTime == true){
 		dataSentDuringThisContact = 0;
@@ -243,7 +245,7 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 						{	//When found, verify if the next hop is nodeInContactWithWirelessAddress and the time is coherent with this contact
 							if(bndlHeader.GetPathVector()[i + 1].GetNodeAddress() == nodeInContactWithWirelessAddress && bndlHeader.GetPathVector()[i + 1].GetContactTime() <= Simulator::Now())
 							{
-								routingEntryFound.nextHopIP = bndlHeader.GetPathVector()[i].GetNodeAddress();
+								routingEntryFound.nextHopIP = bndlHeader.GetPathVector()[i + 1].GetNodeAddress();
 								send = true;
 								break;
 								/*
@@ -640,7 +642,7 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 	receivedBundle->PeekHeader(bndlHeader);
 	if (bndlHeader.GetBundleType() == 0) {
 		stringstream fileName;
-		fileName <<  "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Received_by_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+		fileName << tempPath <<  "Received_by_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 		string tmp = fileName.str();
 		const char* reportName = tmp.c_str();
 		ofstream report;
@@ -758,7 +760,7 @@ bool DtnApp::isTransmissionPossibleIntersatellite (Ipv4Address nodeInContactWith
 
 void DtnApp::PrintNanosatelliteBufferOccupancy() {
 	stringstream fileName;
-	fileName << "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Buffer_Occupancy_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+	fileName << tempPath << "Buffer_Occupancy_" << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 	string tmp = fileName.str();
 	const char* reportName = tmp.c_str();
 	ofstream report;
@@ -933,7 +935,7 @@ void DtnApp::SendBundle (Ptr<Packet> transmittingBundle, RoutingEntry routingEnt
 	}
 	if (bndlHeader.GetBundleType() == 0) {
 		stringstream fileName;
-		fileName << "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/Sent_by_"  << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
+		fileName << tempPath << "Sent_by_"  << (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() << ".txt";
 		string tmp = fileName.str();
 		const char* reportName = tmp.c_str();
 		ofstream report;
@@ -1589,7 +1591,7 @@ int main (int argc, char *argv[])
 	cout << "Started reading contact table\n";
 	//Getting ready to read contact table file
 	stringstream contactFile;
-	contactFile << "/home/tesista/Contact_Tables/Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
+	contactFile << contactTablePath << "Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
 	string contact = contactFile.str();
 	const char* contactFileName = contact.c_str();
 	ifstream contactReport;
@@ -1608,7 +1610,6 @@ int main (int argc, char *argv[])
 	//	Add an entry to the contactTable structure for each node in the simulation, saving the RX IP.
 	//	This because the routing algorithm begins the computation from the destination address, which
 	//	must be an RX IP.
-
 	for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
 		if(i < nHotSpots || i >= nHotSpots+nNanosats){
 			contactEntry.this_node_address = (allWirelessNodes.Get(i)->GetObject<Ipv4>()->GetAddress(3,0)).GetLocal();
@@ -1621,18 +1622,26 @@ int main (int argc, char *argv[])
 	}
 	//For every line of the contact table
 	while (contactReport >> destinationAddress >> sourceAddress >> endContactTime >> startContactTime >> volumeTraffic) {
-		//This for handles the comparison between a string and an Ipv4Address object
+		//This for handles the comparison between a string and an Ipv4Address object creating a string corresponding to the current node address
 		for (uint32_t i = 0; i < (nHotSpots+nNanosats+nColdSpots); i++) {
-			stringstream tmp;
-			if ((i >= nHotSpots) && (i < (nHotSpots+nNanosats)))
-				tmp << "10.0.0." << (i+1);
-			else
-				tmp << "50.0.0." << (i+1);
-			string address = tmp.str();
-			//Actually compare the read address and if this is the right entry add the remaining information
-			if (destinationAddress == address) {
-				Simulator::Schedule(MilliSeconds((uint32_t)startContactTime), &DtnApp::CheckWirelessBuffer, app[i+1], Ipv4Address(sourceAddress.c_str()), true, (floor((double)((uint32_t)endContactTime - (uint32_t)startContactTime) / 1000 * TX_RATE_WIRELESS_LINK / BUNDLEDATASIZE)));
-				Simulator::Schedule(MilliSeconds((uint32_t)endContactTime), &DtnApp::StopWirelessTransmission, app[i+1], Ipv4Address(sourceAddress.c_str()));
+			stringstream tmpRX;
+			stringstream tmpTX;
+			if (i >= nHotSpots && i < nHotSpots+nNanosats){ //If nanosat
+				tmpTX << "50.0.0." << (i+1);
+				tmpRX << "10.0.0." << (i+1);
+			}
+			else{											//If HotSpot or ColdSpot
+				tmpTX << "10.0.0." << (i+1);
+				tmpRX << "50.0.0." << (i+1);
+			}
+			string addressTX = tmpTX.str();
+			string addressRX = tmpRX.str();
+			//Actually compare the read address, if this is the right entry add the remaining information
+			if (sourceAddress == addressTX) {
+				Simulator::Schedule(MilliSeconds((uint32_t)startContactTime), &DtnApp::CheckWirelessBuffer, app[i+1], Ipv4Address(destinationAddress.c_str()), true, (floor((double)((uint32_t)endContactTime - (uint32_t)startContactTime) / 1000 * TX_RATE_WIRELESS_LINK / BUNDLEDATASIZE)));
+				Simulator::Schedule(MilliSeconds((uint32_t)endContactTime), &DtnApp::StopWirelessTransmission, app[i+1], Ipv4Address(destinationAddress.c_str()));
+			}
+			if(destinationAddress == addressRX) {
 				contactTable[i].t_start.push_back(startContactTime);
 				contactTable[i].t_end.push_back(endContactTime);
 				contactTable[i].node_in_contact_with.push_back(Ipv4Address(sourceAddress.c_str()));
