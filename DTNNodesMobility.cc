@@ -88,12 +88,12 @@ void DTNNodesMobility::AdvancePositionNanosatellites(double initialphi, uint32_t
     uint32_t i = 0;
 	uint32_t updateCont = t_now / (SAT_POSITION_UPDATE_TIME * 1000);
 	double beta, phi;
-	stringstream fileName;
+/*	stringstream fileName;
 	fileName << tempPath << "Coordinate SAT1.txt";
 	string tmp = fileName.str();
 	const char* reportName = tmp.c_str();
 	ofstream report;
-//	report.open(reportName, ios::out | ios::app | ios::binary);
+//	report.open(reportName, ios::out | ios::app | ios::binary); */
 	for (uint32_t orbit = 0; orbit < nOrbits; orbit++){
 		beta = (M_PI * orbit / nOrbits);
 		for (vector<DTNNodePosition>::iterator iter = nodeList[orbit].begin(); iter != nodeList[orbit].end(); ++iter) {
@@ -113,12 +113,12 @@ void DTNNodesMobility::AdvancePositionNanosatellites(double initialphi, uint32_t
 }
 
 void DTNNodesMobility::AdvancePositionGroundStations(uint32_t t_now, bool preSimulation) {
-	stringstream fileName;
+/*	stringstream fileName;
 	fileName << tempPath << "Coordinate HS1.txt";
 	string tmp = fileName.str();
 	const char* reportName = tmp.c_str();
 	ofstream report;
-//	report.open(reportName, ios::out | ios::app | ios::binary);
+//	report.open(reportName, ios::out | ios::app | ios::binary);*/
 	uint32_t updateCont = t_now / (SAT_POSITION_UPDATE_TIME * 1000);
 	for (vector<DTNNodePosition>::iterator iter = nodeList.begin()->begin() ; iter != nodeList.begin()->end(); ++iter) {
 		Ptr<MobilityModel> mobility = (*iter).node->GetObject<MobilityModel>();

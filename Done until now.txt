@@ -45,7 +45,13 @@ the path vector and route the bundle
 -Corrected errors on contact table build
 
 4 Maggio
--
+-Completed Serialize/Deserialize in packet definition
 
 10/11 Maggio
 -Moving along with debugger correcting errors
+
+16 Maggio
+-Corrected majority of warnings, left some unused vars for debugging
+-Added simulation percentage display
+
+
