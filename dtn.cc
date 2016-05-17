@@ -415,12 +415,22 @@ void DtnApp::CreateBundleRequest (Ipv4Address destinationAddress) {
 //INCONGRUENCE/BUG here: SOB is actually dependent from the result of this operation, let ignore this for now
 vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable, Ipv4Address destinationAddress, uint32_t TOV, uint32_t SOB){
 	//Init here all the date structure to start the recursive action
+	uint8_t* addr = new uint8_t[4];
+	destinationAddress.Serialize(addr);
+	uint8_t temp = addr[0] - 10 + nHotSpots + nNanosats;
+	addr[0] = 50;
+	addr[3] = temp;
+	uint32_t destAddress = addr[3] | addr[2]<<8 | addr[1]<<16 | addr[0]<<24;
+
 	vector< vector<mypacket::BndlPath> > allPaths;
 	vector<mypacket::BndlPath> untilHere;
 
 	SourceContactGraphRouting(allPaths, contactTable, destinationAddress, TOV, SOB, untilHere);
 
-	return ChoosePath(allPaths);
+	untilHere = ChoosePath(allPaths);
+	mypacket::BndlPath coldSpotHop() //
+	untilHere.push_back()
+	return
 }
 
 /*
@@ -1675,7 +1685,7 @@ int main (int argc, char *argv[])
 	// Bundle transmission
 
 
-	Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "50.0.0.70", contactTable, 10000000);
+	Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.1", contactTable, 10000000);
 	/*
 	for (uint32_t count = 1; count <= nBundles; count++) {
 //		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2");
