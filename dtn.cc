@@ -19,6 +19,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <ctime>
 #include "mypacket.h"
 #include "DTNNodesMobility.h"
 
@@ -98,7 +99,7 @@ public:
 	//void EmptyTransmittedWirelessBundles();
 	void FindDestination(Ptr<Packet> bundle);
 	RoutingEntry GetNextHopAddress(Ipv4Address bundleDestinationEID);
-	bool isTransmissionPossibleIntersatellite (Ipv4Address nodeInContactWithWirelessAddress, Ipv4Address destinationAddress);
+	//bool isTransmissionPossibleIntersatellite (Ipv4Address nodeInContactWithWirelessAddress, Ipv4Address destinationAddress);
 	void PrintNanosatelliteBufferOccupancy();
 	void ProcessBundleFromTCPSocket(Ipv4Address previousHopIPAddress, uint32_t previousHopPort, Ptr<Packet> receivedBundle);
 	void ProcessBundleFromUDPSocket(Ipv4Address previousHopIPAddress, uint32_t previousHopPort, Ptr<Packet> receivedBundle);
@@ -171,6 +172,7 @@ void DtnApp::CheckWiredBuffer() {
 		if((m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() == "9.0.0.1")
 			routingEntryFound.nextHopIP = bndlHeader.GetPathVector()[0].GetNodeAddress();
 
+		//Add here a managemt of routing betwwen coldspot and rural node.
 
 		SendBundle((*iter)->Copy(), routingEntryFound);
 		stored_wired_bundles.erase(iter);
@@ -202,18 +204,24 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 	uint32_t now = Simulator :: Now().GetMilliSeconds();
 	Ipv4Address thisNode = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
 
+	Ipv4Address ns(167772189);
+	if(ns == thisNode)
+		int a = 0;
+
 	if (firstTime){
 		dataSentDuringThisContact = 0;
 		contactInProgress = true;
+
+		//This provides the destination address for ack bundles.
 		uint8_t* nodeInContactAddress = new uint8_t [4];
-		uint32_t nodeInContactAddr = 0;
 		nodeInContactWithWirelessAddress.Serialize(nodeInContactAddress);  //Correct here
+
 		if ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] < (nHotSpots+nNanosats+1)))	// Node in contact is a nanosatellite
 			nodeInContactAddress[0] = 50;
 		else		// Node in contact is a ground station
 			nodeInContactAddress[0] = 10;
-		nodeInContactAddr = nodeInContactAddress[3] | nodeInContactAddress[2]<<8 | nodeInContactAddress[1]<<16 | nodeInContactAddress[0]<<24;
-		nodeInContactWithTxAddress = Ipv4Address(nodeInContactAddr);
+
+		nodeInContactWithTxAddress = Ipv4Address(nodeInContactAddress[3] | nodeInContactAddress[2]<<8 | nodeInContactAddress[1]<<16 | nodeInContactAddress[0]<<24);
 	}
 
 	if (stored_wireless_bundles.size() != 0 && contactInProgress) {
@@ -269,33 +277,9 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 			}
 			else
 			{
-				//begin ack management
-				stringstream tmp;
-				tmp << "50.0.0." << nHotSpots+nNanosats+nColdSpots+1;
-				string addressClass = tmp.str();
-				stringstream tmp2;
-				tmp2 << "50.0.0." << nHotSpots+1;
-				string addressClass2 = tmp2.str();
-				uint8_t* nodeInContactAddress = new uint8_t [4];
-				uint8_t* thisNodeAddress = new uint8_t [4];
-				nodeInContactWithWirelessAddress.Serialize(nodeInContactAddress);
-				(m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal().Serialize(thisNodeAddress);
-				if(((routingEntryFound.nextHopIP == Ipv4Address(addressClass.c_str())) && (nodeInContactWithWirelessAddress < Ipv4Address(addressClass2.c_str()))) || (routingEntryFound.nextHopIP == Ipv4Address("50.0.0.0")) || (routingEntryFound.nextHopIP == Ipv4Address("10.0.0.0")) || (((thisNodeAddress[3] > nHotSpots) && (thisNodeAddress[3] <= (nHotSpots+nNanosats))) && ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] <= (nHotSpots+nNanosats))))) {
-					routingEntryFound.nextHopIP = nodeInContactWithWirelessAddress;
-					routingEntryFound.nextHopIPMask = "255.255.255.255";
-				}
-
-				if (((thisNodeAddress[3] > nHotSpots) && (thisNodeAddress[3] <= (nHotSpots+nNanosats))) && ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] <= (nHotSpots+nNanosats)))) {
-					if (((dataSentDuringThisContact + 1) <= maximumNumberBundlesInCurrentContact) && (bndlHeader.GetBundleType() == 0))
-						send = isTransmissionPossibleIntersatellite(nodeInContactWithWirelessAddress, bndlHeader.GetDst());
-					else if (bndlHeader.GetBundleType() != 0)
-						send = true;
-				}
-				else if (((routingEntryFound.nextHopIP == nodeInContactWithWirelessAddress) || (routingEntryFound.nextHopIP == bndlHeader.GetDst())) && ((dataSentDuringThisContact + 1) <= maximumNumberBundlesInCurrentContact))
-					send = true;
-				//End of ack management
-				delete [] nodeInContactAddress;
-				delete [] thisNodeAddress;
+				routingEntryFound.nextHopIP = nodeInContactWithWirelessAddress;
+				routingEntryFound.nextHopIPMask = "255.255.255.255";
+				send = true;
 			}
 
 			if (send) {
@@ -317,7 +301,6 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 	else
 		transmissionInProgress = false;
 }
-
 
 void DtnApp::CloseTxSocket (Ptr<Socket> socket, uint32_t packet_size) {
 	Address socketAddress;
@@ -444,9 +427,16 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable,
 	//Begin of the iteration
 	SourceContactGraphRouting(allPaths, contactTable, coldSpotAddress, TOV, SOB, untilHere);
 
+	/*
+	Here the last two hops are added: between the nanosat and the coldspot and then between the coldspot and the rural node.
+	Time is not necessary because there is no possibility to have a later contact: is used the first useful contact with the coldspot.
+	Again the last bit of route is wired so there is no need for a contact time information.
+	*/
 	untilHere = ChoosePath(allPaths);
-	//mypacket::BndlPath coldSpotHop(0, des) //
-	//untilHere.push_back()
+	mypacket::BndlPath coldSpotHop(0, coldSpotAddress);
+	untilHere.push_back(coldSpotHop);
+	mypacket::BndlPath ruralNodeHop(0, destinationAddress);
+	untilHere.push_back(coldSpotHop);
 	return untilHere;
 }
 
@@ -715,6 +705,7 @@ RoutingEntry DtnApp::GetNextHopAddress(Ipv4Address bundleDestinationEID) {
 	return routingTable[0]; //Avoiding warnings, should never get here
 }
 
+/*
 //This probably will be deleted
 bool DtnApp::isTransmissionPossibleIntersatellite (Ipv4Address nodeInContactWithWirelessAddress, Ipv4Address destinationAddress) {
 	uint8_t* contactAddress = new uint8_t [4];
@@ -793,7 +784,7 @@ bool DtnApp::isTransmissionPossibleIntersatellite (Ipv4Address nodeInContactWith
 	}
 	//Avoiding warnings, should never get here
 	return false;
-}
+}*/
 
 void DtnApp::PrintNanosatelliteBufferOccupancy() {
 	stringstream fileName;
@@ -824,7 +815,7 @@ void DtnApp::ProcessBundleFromUDPSocket (Ipv4Address previousHopIPAddress, uint3
 	mypacket::BndlHeader bndlHeader;
 	receivedBundle->PeekHeader(bndlHeader);
 	if (bndlHeader.GetBundleType() == 0) {			// Data Bundle
-		CreateBundleAck(bndlHeader.GetOrigin(), bndlHeader.GetOriginSeqno());
+		CreateBundleAck(bndlHeader.GetOrigin(), bndlHeader.GetOriginSeqno()); //What is the point of having the central node as origin?
 		FindDestination(receivedBundle);
 	}
 	else if (bndlHeader.GetBundleType() == 1)		// Ack Bundle
@@ -1045,6 +1036,7 @@ void DtnApp::UpdateContactInformation(Ptr<Packet> bufferInfo) {
 int main (int argc, char *argv[])
 {
 	//Simulator::EnableParallelSimulation(); just dream about it
+	uint64_t startTime = time(NULL);
 	cout << "Started\n";
 
 
@@ -1627,7 +1619,7 @@ int main (int argc, char *argv[])
 	}
 
 	// READING CONTACT TABLE
-	cout << "Started reading contact table\n";
+	cout << "Started reading contact table.\n";
 	//Getting ready to read contact table file
 	stringstream contactFile;
 	contactFile << contactTablePath << "Contact_Table_" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
@@ -1685,8 +1677,6 @@ int main (int argc, char *argv[])
 				contactTable[i].t_end.push_back(endContactTime);
 				contactTable[i].node_in_contact_with.push_back(Ipv4Address(sourceAddress.c_str()));
 				contactTable[i].volumeTraffic.push_back(volumeTraffic);
-				//Break from the for loop because we are done here
-				break;
 			}
 		}
 	}
@@ -1727,6 +1717,9 @@ int main (int argc, char *argv[])
 	Simulator::Stop (Seconds (duration));
 	Simulator::Run ();
 	Simulator::Destroy ();
+
+	cout << "\nSimulation ended. It took: " << (time(NULL) - startTime) / 60 << "min and " << (time(NULL) - startTime) % 60 << " sec\n";
+
 	return 0;
 }
 
