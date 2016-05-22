@@ -117,7 +117,7 @@ public:
 	//Prototypes of new functions
 	vector<mypacket::BndlPath> FindPath(vector<ContactEntry> contactTable, Ipv4Address destinationAddress, uint32_t TOV, uint32_t SOB);
 	void SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, vector<ContactEntry> contactTable, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere);
-	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > allPaths);
+	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > allPaths, vector<ContactEntry> contactTable, uint32_t SOB);
 	int GetNodeType(Ipv4Address address);
 	bool CheckContact(uint32_t volumeRemaining, uint32_t SOB);
 	void PrintSimulationStatus();
@@ -435,7 +435,7 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable,
 	Time is not necessary because there is no possibility to have a later contact: is used the first useful contact with the coldspot.
 	Again the last bit of route is wired so there is no need for a contact time information.
 	*/
-	untilHere = ChoosePath(allPaths);
+	untilHere = ChoosePath(allPaths, contactTable, SOB);
 	mypacket::BndlPath coldSpotHop(0, coldSpotAddress);
 	untilHere.push_back(coldSpotHop);
 	//mypacket::BndlPath ruralNodeHop(0, destinationAddress);
@@ -481,14 +481,12 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 			Ipv4Address nextHop = contactTable[thisNode].node_in_contact_with[k];
 			uint8_t* addr = new uint8_t[4];
 			nextHop.Serialize(addr);
-			if(addr[0] == 50)
+			if(addr[0] == 50) //If nanosat
 				addr[0] = 10;
 			else if(addr[0] == 10) //Else if not needed, but I don't care.
-			{	//If a HotSpot, we need to write down the wired interface.
-				//The time of contact has no meaning in this case and it's not read anywhere.
-				addr[0] = 9;
-				addr[3] = addr[3] + 1;
-			}
+				addr[0] = 50;	//If a HotSpot, we need to write down the wired interface, but it will be done in ChoosePath
+
+
 			uint32_t destAddress = addr[3] | addr[2]<<8 | addr[1]<<16 | addr[0]<<24;
 			nextHop = Ipv4Address(destAddress);
 
@@ -546,21 +544,49 @@ bool DtnApp :: CheckContact(uint32_t volumeRemaining, uint32_t SOB){
 	This for now simply finds the fastest route, in a future the decision could be made on
 	optimization rules like a omogeneous load between nodes.
  */
-vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPath> > allPaths){
-	//The second index has to be zero because the delivery time depends on the last contact,
-	//the one with the cold spot
-	//Yes, the BndlPath vector is in reversed order, keep in mind that and think about to reverse it some time in the future
-	uint32_t minT = allPaths[0][0].GetContactTime();
-	uint32_t minI = 0;
+vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPath> > allPaths, vector<ContactEntry> contactTable, uint32_t SOB){
+	//Choose here the path, following diversified logics
 
+	//The second index points at the start time of the contact between the nanosat and the coldspot
+	uint32_t minT = allPaths[0][allPaths[0].size() - 2].GetContactTime();
+	uint32_t minI = 0;
 	for(uint32_t i = 0; i < allPaths.size(); i++)
 	{
-		if(allPaths[i][0].GetContactTime() < minT)
+		if(allPaths[i][allPaths[i].size() - 2].GetContactTime() < minT)
 		{
-			minT = allPaths[i][0].GetContactTime();
+			minT = allPaths[i][allPaths[i].size() - 2].GetContactTime();
 			minI = i;
 		}
 	}
+
+	//Update fields of the contact table
+	for(uint32_t i = 0; i < allPaths[minI].size(); i++) //Iterate through the path vector
+	{
+		for(uint32_t k = 0; k < contactTable.size(); k++) //Look in the contact table for the corresponding ip RX
+		{	//Find the correct entry
+			if(contactTable[k].this_node_address == allPaths[minI][i].GetNodeAddress())
+			{
+				for(uint32_t n = 0; n < contactTable[k].t_start.size(); n++) //Look for the right contact time
+				{
+					if(contactTable[k].t_start[n] == allPaths[minI][i].GetContactTime())
+						contactTable[k].volumeTraffic[n] -= SOB;
+				}
+			}
+		}
+	}
+
+	//Prior to return, we need to change the first hop address (hotspot) to the wired interface
+	Ipv4Address firstHop = allPaths[minI][0].GetNodeAddress();
+	uint8_t* addr = new uint8_t[4];
+	firstHop.Serialize(addr);
+
+	//We need to write down the wired interface.
+	addr[0] = 9;
+	addr[3] = addr[3] + 1;
+
+	uint32_t destAddress = addr[3] | addr[2]<<8 | addr[1]<<16 | addr[0]<<24;
+	firstHop = Ipv4Address(destAddress);
+	allPaths[minI][0].SetNodeAddress(firstHop);
 
 	return allPaths[minI];
 }
