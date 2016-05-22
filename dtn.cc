@@ -165,14 +165,17 @@ void DtnApp::CheckWiredBuffer() {
 		mypacket::BndlHeader bndlHeader;
 		(*iter)->PeekHeader(bndlHeader);
 		RoutingEntry routingEntryFound = GetNextHopAddress(bndlHeader.GetDst());
+		Ipv4Address thisNode = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
 
 		//Verify it's a bundle from a central node (9.0.0.1)
 		//If true, overwrite nexthop ip, reading it from the path vector
 
-		if((m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal() == "9.0.0.1")
+		if(thisNode == "9.0.0.1")
 			routingEntryFound.nextHopIP = bndlHeader.GetPathVector()[0].GetNodeAddress();
 
-		//Add here a managemt of routing betwwen coldspot and rural node.
+		//If this is a coldspot, send the bundle to the
+		if(GetNodeType(thisNode) == 3)
+			routingEntryFound.nextHopIP = bndlHeader.GetDst();
 
 		SendBundle((*iter)->Copy(), routingEntryFound);
 		stored_wired_bundles.erase(iter);
@@ -216,7 +219,7 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 		uint8_t* nodeInContactAddress = new uint8_t [4];
 		nodeInContactWithWirelessAddress.Serialize(nodeInContactAddress);  //Correct here
 
-		if ((nodeInContactAddress[3] > nHotSpots) && (nodeInContactAddress[3] < (nHotSpots+nNanosats+1)))	// Node in contact is a nanosatellite
+		if (GetNodeType(nodeInContactWithWirelessAddress) == 2)	// Node in contact is a nanosatellite
 			nodeInContactAddress[0] = 50;
 		else		// Node in contact is a ground station
 			nodeInContactAddress[0] = 10;
@@ -276,8 +279,8 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 				}
 			}
 			else
-			{
-				routingEntryFound.nextHopIP = nodeInContactWithWirelessAddress;
+			{	//Give back ack to the sender
+				routingEntryFound.nextHopIP = nodeInContactWithTxAddress;
 				routingEntryFound.nextHopIPMask = "255.255.255.255";
 				send = true;
 			}
@@ -435,8 +438,8 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable,
 	untilHere = ChoosePath(allPaths);
 	mypacket::BndlPath coldSpotHop(0, coldSpotAddress);
 	untilHere.push_back(coldSpotHop);
-	mypacket::BndlPath ruralNodeHop(0, destinationAddress);
-	untilHere.push_back(coldSpotHop);
+	//mypacket::BndlPath ruralNodeHop(0, destinationAddress);
+	//untilHere.push_back(coldSpotHop);
 	return untilHere;
 }
 
@@ -562,56 +565,6 @@ vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPat
 	return allPaths[minI];
 }
 
-/*
-void DtnApp::CreateBundleStatusBuffer() {
-	mypacket::BndlHeader bndlHeader;
-	uint8_t* coldSpotAddress = new uint8_t[4];
-	uint8_t* payload = new uint8_t[8 * ((uint32_t)nColdSpots+1)];
-	uint32_t packetStoredSizeForEachColdSpot[(uint32_t)nColdSpots+1];
-	for (uint32_t i = 0; i < (nColdSpots+1); i++)
-		packetStoredSizeForEachColdSpot[i] = 0;
-	for (vector<Ptr<Packet> >::iterator iter = stored_wireless_bundles.begin() ; iter != stored_wireless_bundles.end(); ++iter) {
-		(*iter)->PeekHeader(bndlHeader);
-		if (bndlHeader.GetDst() == Ipv4Address("9.0.0.1"))
-			packetStoredSizeForEachColdSpot[(uint32_t)nColdSpots]++;
-		else {
-			(bndlHeader.GetDst() & Ipv4Address("255.0.0.0")).Serialize(coldSpotAddress);		// memorizzo la sottorete rappresentante la zona rurale in considerazione in formato uint8_t [4], in modo da poter prelevare il valore intero associato al primo ottetto dell'indirizzo
-			packetStoredSizeForEachColdSpot[coldSpotAddress[0]-11]++;
-		}
-	}
-	for (uint32_t i = 0; i < nColdSpots; i++) {
-		stringstream coldSpotAddr;
-		coldSpotAddr << (11 + i) << ".0.0.1";
-		string address = coldSpotAddr.str();
-		Ipv4Address coldSpotIPv4Address = Ipv4Address(address.c_str());
-		coldSpotIPv4Address.Serialize(coldSpotAddress);
-		copy(coldSpotAddress, coldSpotAddress + 4, payload + (i * 8));
-		for (uint32_t j = 0; j < 4; j++)
-			payload [4 + (i * 8) + j] = packetStoredSizeForEachColdSpot[i]>>(24 - 8 * j);
-	}
-	stringstream centralNodeAddr;
-	centralNodeAddr << "9.0.0.1";
-	string address = centralNodeAddr.str();
-	Ipv4Address centralNodeIPv4Address = Ipv4Address(address.c_str());
-	centralNodeIPv4Address.Serialize(coldSpotAddress);
-	copy(coldSpotAddress, coldSpotAddress + 4, payload + ((uint32_t)nColdSpots * 8));
-	for (uint32_t j = 0; j < 4; j++)
-		payload [4 + ((uint32_t)nColdSpots * 8) + j] = packetStoredSizeForEachColdSpot[(uint32_t)nColdSpots]>>(24 - 8 * j);
-	Ptr<Packet> bundleInfo = Create<Packet>(payload, 8 * ((uint32_t)nColdSpots+1));
-	bndlHeader.SetBundleType(2);
-	//Ipv4Address a = (m_node->GetObject<Ipv4>()->GetAddress(1, 0)).GetLocal();
-	bndlHeader.SetOrigin ((m_node->GetObject<Ipv4>()->GetAddress(1, 0)).GetLocal());
-	bndlHeader.SetDst (nodeInContactWithRxAddress);
-	bndlHeader.SetOriginSeqno (bundleInfo->GetUid());
-	bndlHeader.SetPayloadSize (8*(nColdSpots+1));
-	bndlHeader.SetSrcTimestamp (Simulator::Now ());
-	bundleInfo->AddHeader (bndlHeader);
-	stored_wireless_bundles.insert(stored_wireless_bundles.begin(), bundleInfo);
-	CheckWirelessBuffer(nodeInContactWithRxAddress, false, maximumNumberBundlesInCurrentContact);
-	delete [] coldSpotAddress;
-	delete [] payload;
-}
-*/
 
 void DtnApp::DeleteActiveSocketEntry (Ipv4Address sourceIpAddress, uint32_t sourcePort, uint32_t socketType) {
 	if (socketType == 0) {
@@ -634,17 +587,7 @@ void DtnApp::DeleteActiveSocketEntry (Ipv4Address sourceIpAddress, uint32_t sour
 	}
 }
 
-/*Not used in this work
-void DtnApp::DeleteAllActiveWirelessSockets() {
-	active_wireless_sockets.clear();
-}
- */
-/*Not used in this work
-void DtnApp::EmptyTransmittedWirelessBundles() {
-	for (vector<Ptr<Packet> >::iterator iter = transmitted_wireless_bundles.begin() ; iter != transmitted_wireless_bundles.end();++iter)
-		stored_wireless_bundles.insert(stored_wireless_bundles.begin(), (*iter)->Copy());
-	transmitted_wireless_bundles.clear();
-}*/
+
 
 /*
 	This will get involved but not in this stage of the work.
@@ -671,20 +614,17 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 	//Here a completed transaction is managed, terminating the bundle life
 	Ipv4Address thisNode = (m_node->GetObject<Ipv4>()->GetAddress(1, 0)).GetLocal();
 	if(bndlHeader.GetDst() == thisNode)
-		for (vector<Ptr<Packet> >::iterator iter = transmitted_wired_bundles.begin() ; iter != transmitted_wired_bundles.end(); ++iter) {
-			mypacket::BndlHeader thisHeader;
-			(*iter)->PeekHeader(thisHeader);
-			if(bndlHeader.GetOriginSeqno() == thisHeader.GetOriginSeqno()) {
-				transmitted_wired_bundles.erase(iter);
-				break;
-			}
-		}
+	{
+
+	}
 	else //If this is not the destination
 	{
 		receivedBundle->RemoveAllPacketTags(); //Tags as low level flow control
 		//This is a problem: this is necessary to understand which is the next interface and relays on the old logic, here it should read the path vector
-		RoutingEntry routingEntryFound = GetNextHopAddress(bndlHeader.GetDst());
-		if (routingEntryFound.deviceType == 0)
+		//RoutingEntry routingEntryFound = GetNextHopAddress(bndlHeader.GetDst());
+		//Solved: this is something to look at if implementing other types of traffic flux: maybe look at the path vector.
+		thisNode = (m_node->GetObject<Ipv4>()->GetAddress(2, 0)).GetLocal();
+		if (GetNodeType(thisNode) == 3)
 			stored_wired_bundles.push_back(receivedBundle->Copy());
 		else {
 			stored_wireless_bundles.push_back(receivedBundle->Copy());
@@ -1697,15 +1637,11 @@ int main (int argc, char *argv[])
 
 
 	Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", contactTable, 10000000);
-	/*
+
 	for (uint32_t count = 1; count <= nBundles; count++) {
-//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2");
-//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "12.0.0.2");
-//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "13.0.0.2");
-//		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "14.0.0.2");
-		//Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[(uint32_t)nHotSpots+(uint32_t)nNanosats+(uint32_t)nColdSpots+1], "9.0.0.1");
+		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "40.0.0.2", contactTable, 10000000);
 	}
-	 */
+
 
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
 	for (uint32_t i = 0; i < nColdSpots; i++)
