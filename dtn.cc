@@ -92,7 +92,7 @@ public:
 	void CloseTxSocket(Ptr<Socket> socket, uint32_t packet_size);
 	void ConnectionAccept(Ptr<Socket>, const Address& from);
 	void CreateBundleAck(Ipv4Address sourceIPAddress, uint32_t bundleSeqNumber);
-	void CreateBundleData (Ipv4Address destinationAddress, vector<ContactEntry> contactTable, uint32_t TOV);
+	void CreateBundleData (Ipv4Address destinationAddress, uint32_t TOV);
 	void CreateBundleRequest (Ipv4Address destinationIPAddress);
 	//void CreateBundleStatusBuffer();
 	void DeleteActiveSocketEntry(Ipv4Address sourceIPAddress, uint32_t sourcePort, uint32_t socketType);
@@ -115,9 +115,9 @@ public:
 	vector<uint32_t> bufferOccupancyNodeInContactWith;
 
 	//Prototypes of new functions
-	vector<mypacket::BndlPath> FindPath(vector<ContactEntry> contactTable, Ipv4Address destinationAddress, uint32_t TOV, uint32_t SOB);
-	void SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, vector<ContactEntry> contactTable, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere);
-	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > allPaths, vector<ContactEntry> contactTable, uint32_t SOB);
+	vector<mypacket::BndlPath> FindPath(Ipv4Address destinationAddress, uint32_t TOV, uint32_t SOB);
+	void SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere);
+	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > allPaths, Ipv4Address coldSpotAddress, uint32_t SOB);
 	int GetNodeType(Ipv4Address address);
 	bool CheckContact(uint32_t volumeRemaining, uint32_t SOB);
 	void PrintSimulationStatus();
@@ -203,14 +203,10 @@ void DtnApp::CheckWiredBuffer() {
 	modifications to the code.
  */
 void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime, uint32_t maximumNumberBundlesInCurrentContact)
-{
+{/*
 	uint32_t now = Simulator :: Now().GetMilliSeconds();
 	Ipv4Address thisNode = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
-
-	Ipv4Address ns(167772189);
-	if(ns == thisNode)
-		int a = 0;
-
+*/
 	if (firstTime){
 		dataSentDuringThisContact = 0;
 		contactInProgress = true;
@@ -363,7 +359,7 @@ void DtnApp::CreateBundleAck (Ipv4Address sourceAddress, uint32_t bundleSeqNumbe
 	CheckWirelessBuffer(nodeInContactWithTxAddress, false, maximumNumberBundlesInCurrentContact);
 }
 
-void DtnApp::CreateBundleData (Ipv4Address destinationAddress, vector<ContactEntry> contactTable, uint32_t TOV) {
+void DtnApp::CreateBundleData (Ipv4Address destinationAddress, uint32_t TOV) {
 	Ptr<Packet> bundle = Create<Packet> (PAYLOADSIZE);
 	mypacket::BndlHeader bndlHeader;
 	bndlHeader.SetBundleType(0);
@@ -373,7 +369,7 @@ void DtnApp::CreateBundleData (Ipv4Address destinationAddress, vector<ContactEnt
 	bndlHeader.SetPayloadSize (PAYLOADSIZE);
 	bndlHeader.SetSrcTimestamp (Simulator::Now ());
 	//Here set the paht vector through the SCGR algorithm
-	bndlHeader.SetPathVector(FindPath(contactTable, destinationAddress, TOV, BUNDLEDATASIZE));
+	bndlHeader.SetPathVector(FindPath(destinationAddress, TOV, BUNDLEDATASIZE));
 	bundle->AddHeader (bndlHeader);
 	stored_wired_bundles.push_back(bundle);
 }
@@ -407,7 +403,7 @@ void DtnApp::CreateBundleRequest (Ipv4Address destinationAddress) {
 	SOB -> Size Of Bundle
  */
 //INCONGRUENCE/BUG here: SOB is actually dependent from the result of this operation, let ignore this for now
-vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable, Ipv4Address destinationAddress, uint32_t TOV, uint32_t SOB){
+vector<mypacket::BndlPath> DtnApp :: FindPath(Ipv4Address destinationAddress, uint32_t TOV, uint32_t SOB){
 	//Init here all the data structure to start the recursive action
 
 	/*
@@ -428,19 +424,9 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable,
 	vector< vector<mypacket::BndlPath> > allPaths;
 	vector<mypacket::BndlPath> untilHere;
 	//Begin of the iteration
-	SourceContactGraphRouting(allPaths, contactTable, coldSpotAddress, TOV, SOB, untilHere);
+	SourceContactGraphRouting(allPaths, coldSpotAddress, TOV, SOB, untilHere);
 
-	/*
-	Here the last two hops are added: between the nanosat and the coldspot and then between the coldspot and the rural node.
-	Time is not necessary because there is no possibility to have a later contact: is used the first useful contact with the coldspot.
-	Again the last bit of route is wired so there is no need for a contact time information.
-	*/
-	untilHere = ChoosePath(allPaths, contactTable, SOB);
-	mypacket::BndlPath coldSpotHop(0, coldSpotAddress);
-	untilHere.push_back(coldSpotHop);
-	//mypacket::BndlPath ruralNodeHop(0, destinationAddress);
-	//untilHere.push_back(coldSpotHop);
-	return untilHere;
+	return ChoosePath(allPaths, coldSpotAddress, SOB);
 }
 
 /*
@@ -449,13 +435,12 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(vector<ContactEntry> contactTable,
 	SCGR with all possible paths. Lastly the final decision on the 
 	path will be taken by a separate function.
  */
-void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, vector<ContactEntry> contactTable, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere){
+void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere){
 	//Routine here to find the entry in the contactTable starting from an IP address
 	uint32_t thisNode; //Holds the index of the contact table corresponding to the node considered in this call
 	for(thisNode = 0; thisNode < contactTable.size(); thisNode++)
 		if(contactTable[thisNode].this_node_address == destAddress)
 			break;
-
 
 	vector<mypacket::BndlPath> newPath;
 
@@ -499,7 +484,7 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 			if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 1)
 				allPaths.push_back(newPath);
 			else if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 2)
-				SourceContactGraphRouting(allPaths, contactTable, nextHop, contactTable[thisNode].t_start[k], SOB, newPath);
+				SourceContactGraphRouting(allPaths, nextHop, contactTable[thisNode].t_start[k], SOB, newPath);
 		}
 	}
 }
@@ -544,34 +529,40 @@ bool DtnApp :: CheckContact(uint32_t volumeRemaining, uint32_t SOB){
 	This for now simply finds the fastest route, in a future the decision could be made on
 	optimization rules like a omogeneous load between nodes.
  */
-vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPath> > allPaths, vector<ContactEntry> contactTable, uint32_t SOB){
+vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPath> > allPaths, Ipv4Address coldSpotAddress, uint32_t SOB){
 	//Choose here the path, following diversified logics
 
 	//The second index points at the start time of the contact between the nanosat and the coldspot
-	uint32_t minT = allPaths[0][allPaths[0].size() - 2].GetContactTime();
+	uint32_t minT = allPaths[0][allPaths[0].size() - 1].GetContactTime();
 	uint32_t minI = 0;
 	for(uint32_t i = 0; i < allPaths.size(); i++)
 	{
-		if(allPaths[i][allPaths[i].size() - 2].GetContactTime() < minT)
+		if(allPaths[i][allPaths[i].size() - 1].GetContactTime() < minT)
 		{
-			minT = allPaths[i][allPaths[i].size() - 2].GetContactTime();
+			minT = allPaths[i][allPaths[i].size() - 1].GetContactTime();
 			minI = i;
 		}
 	}
 
+	/*
+		Now that the path is selected, we add the last hop: the one with the coldspot.
+		Time is not necessary because there is no possibility to have a later contact: is used the first useful contact with the coldspot.
+		Then the contact table is updated.
+	 */
+	mypacket::BndlPath coldSpotHop(0, coldSpotAddress);
+	allPaths[minI].push_back(coldSpotHop);
+
 	//Update fields of the contact table
-	for(uint32_t i = 0; i < allPaths[minI].size(); i++) //Iterate through the path vector
+	for(uint32_t i = allPaths[minI].size() - 1; i > 0; i--) //Iterate through the path vector, from the coldspot to the first nanosatellite
 	{
 		for(uint32_t k = 0; k < contactTable.size(); k++) //Look in the contact table for the corresponding ip RX
 		{	//Find the correct entry
 			if(contactTable[k].this_node_address == allPaths[minI][i].GetNodeAddress())
-			{
 				for(uint32_t n = 0; n < contactTable[k].t_start.size(); n++) //Look for the right contact time
 				{
-					if(contactTable[k].t_start[n] == allPaths[minI][i].GetContactTime())
+					if(contactTable[k].t_start[n] == allPaths[minI][i - 1].GetContactTime()) //The time relative to this contact is stored in the previous hop
 						contactTable[k].volumeTraffic[n] -= SOB;
 				}
-			}
 		}
 	}
 
@@ -1662,10 +1653,10 @@ int main (int argc, char *argv[])
 	// Bundle transmission
 
 
-	Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", contactTable, 10000000);
+	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);
 
 	for (uint32_t count = 1; count <= nBundles; count++) {
-		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "40.0.0.2", contactTable, 10000000);
+		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 37000000);
 	}
 
 
