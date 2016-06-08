@@ -46,7 +46,7 @@ namespace ns3
       i.WriteHtonU32 (m_srcTimestamp);
       //Serializing path structure, starting from beginning
       i.WriteU8(m_path.size());
-      for(int k = 0; k < m_path.size(); k++)
+      for(uint32_t k = 0; k < m_path.size(); k++)
       {
     	  WriteTo(i, this->GetPathVector()[k].GetNodeAddress());
     	  i.WriteHtonU32(this->GetPathVector()[k].GetContactTime());
@@ -65,7 +65,7 @@ namespace ns3
       //Deserializing path structure, each read bit is already in order
       vector<mypacket::BndlPath> buff;
       uint8_t len = i.ReadU8();
-      for(int k = 0; k < len; k++)
+      for(uint8_t k = 0; k < len; k++)
       {
     	  Ipv4Address a;
     	  ReadFrom(i, a);

@@ -87,7 +87,7 @@ public:
 
 	//Function prototypes
 	void CheckWiredBuffer();
-	void CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime, uint32_t maximumNumberBundlesInCurrentContact);
+	void CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime);
 	//void DeleteAllActiveWirelessSockets();
 	void CloseTxSocket(Ptr<Socket> socket, uint32_t packet_size);
 	void ConnectionAccept(Ptr<Socket>, const Address& from);
@@ -202,7 +202,7 @@ void DtnApp::CheckWiredBuffer() {
 	The RoutingEntry construct is not quite useful any more, but is still used to avoid extensive
 	modifications to the code.
  */
-void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime, uint32_t maximumNumberBundlesInCurrentContact)
+void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, bool firstTime)
 {/*
 	uint32_t now = Simulator :: Now().GetMilliSeconds();
 	Ipv4Address thisNode = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
@@ -287,7 +287,7 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 				sent = true;
 				transmissionInProgress = true;
 				if (bndlHeader.GetBundleType() == 0)
-					Simulator::Schedule (Seconds ((double) bundleSize / TX_RATE_WIRELESS_LINK), &DtnApp::CheckWirelessBuffer, this, nodeInContactWithWirelessAddress, false, maximumNumberBundlesInCurrentContact);
+					Simulator::Schedule (Seconds ((double) bundleSize / TX_RATE_WIRELESS_LINK), &DtnApp::CheckWirelessBuffer, this, nodeInContactWithWirelessAddress, false);
 				stored_wireless_bundles.erase(iter);
 				break;
 			}
@@ -356,7 +356,7 @@ void DtnApp::CreateBundleAck (Ipv4Address sourceAddress, uint32_t bundleSeqNumbe
 	bndlHeader.SetSrcTimestamp (Simulator::Now ());
 	ack->AddHeader (bndlHeader);
 	stored_wireless_bundles.insert(stored_wireless_bundles.begin(), ack);
-	CheckWirelessBuffer(nodeInContactWithTxAddress, false, maximumNumberBundlesInCurrentContact);
+	CheckWirelessBuffer(nodeInContactWithTxAddress, false);
 }
 
 void DtnApp::CreateBundleData (Ipv4Address destinationAddress, uint32_t TOV) {
@@ -647,7 +647,7 @@ void DtnApp::FindDestination(Ptr<Packet> receivedBundle) {
 			stored_wireless_bundles.push_back(receivedBundle->Copy());
 			//Schedule a new wireless communication in case there isn't one going on and the contact is still active
 			if (contactInProgress && !transmissionInProgress)
-				CheckWirelessBuffer(nodeInContactWithRxAddress, false, maximumNumberBundlesInCurrentContact);
+				CheckWirelessBuffer(nodeInContactWithRxAddress, false);
 		}
 	}
 }
@@ -987,7 +987,7 @@ void DtnApp::UpdateContactInformation(Ptr<Packet> bufferInfo) {
 	delete [] payload;
 	delete [] cSAddress;
 	delete [] storedBundlesSize;
-	CheckWirelessBuffer(bndlHeader.GetOrigin(), false, maximumNumberBundlesInCurrentContact);
+	CheckWirelessBuffer(bndlHeader.GetOrigin(), false);
 }
 
 int main (int argc, char *argv[])
@@ -997,9 +997,9 @@ int main (int argc, char *argv[])
 	cout << "Started\n";
 
 
-	nHotSpots = 16;
-	nNanosats = 24;
-	nColdSpots = 32;
+	nHotSpots = 8;
+	nNanosats = 42;
+	nColdSpots = 16;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
 	nBundles = 1000;
@@ -1230,89 +1230,102 @@ int main (int argc, char *argv[])
 	TypeId tcp_tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
 	Ptr<DtnApp> app[1 + (uint32_t)nHotSpots + (uint32_t)nNanosats + (uint32_t)nColdSpots + ((uint32_t)nColdSpots * (uint32_t)nRuralNodesForEachColdSpot)];
 
-	//CONTACT TABLE
-	/*
+	//CONTACT TABLE GENERATOR
+
 	vector<ContactEntry> contactTable;
 	ContactEntry contactEntry;
 	NodeContainer allWirelessNodes;
 	allWirelessNodes.Add (hotSpotNodesContainer);
 	allWirelessNodes.Add (nanosatelliteNodesContainer);
 	allWirelessNodes.Add (coldSpotNodesContainer);
-
-	double t_now;
-	bool start_contact[nHotSpots + nNanosats + nColdSpots][nHotSpots + nNanosats + nColdSpots];
+	double TNow;
+	bool contactBetween[nHotSpots + nNanosats + nColdSpots][nHotSpots + nNanosats + nColdSpots];
+	/*	Needed to avoid multiple contacts
+	 * 	At this point the simulator can't handle multiple contacts
+	 * 	due to physical configuration of the WiFi links.
+	 * 	This way the all possible contacts other than the already established
+	 * 	are ignored.
+	 */
+	bool isHeFree[nHotSpots + nNanosats + nColdSpots];
+	bool amIFree[nHotSpots + nNanosats + nColdSpots];
 
 	for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
-
-		//Modify as in contact table reading, this_node_address must contain the RX IP, which is not the on same interface number across different node topologies
-		for (uint32_t i = 0; i <(nHotSpots+nNanosats+nColdSpots); i++){
-				if(i < nHotSpots || i >= nHotSpots+nNanosats){ //If hotspot or coldspot
-					contactEntry.this_node_address = (allWirelessNodes.Get(i)->GetObject<Ipv4>()->GetAddress(3,0)).GetLocal();
-					contactTable.push_back(contactEntry);
-				}
-				else{ //If nanosat
-					contactEntry.this_node_address = (allWirelessNodes.Get(i)->GetObject<Ipv4>()->GetAddress(1,0)).GetLocal();
-					contactTable.push_back(contactEntry);
-				}
+		//As in contact table reading, this_node_address must contain the RX IP, which is not the on same interface number across different node topologies
+		for (uint32_t j = 0; j <(nHotSpots+nNanosats+nColdSpots); j++){
+			if(j < nHotSpots || j >= nHotSpots+nNanosats){ //If hotspot or coldspot
+				contactEntry.this_node_address = (allWirelessNodes.Get(j)->GetObject<Ipv4>()->GetAddress(3,0)).GetLocal();
+				contactTable.push_back(contactEntry);
 			}
-
-		contactTable.push_back(contactEntry);
-		for (uint32_t j = 0; j < (nHotSpots+nNanosats+nColdSpots); j++)
-			start_contact[i][j] = false;
+			else{ //If nanosat
+				contactEntry.this_node_address = (allWirelessNodes.Get(j)->GetObject<Ipv4>()->GetAddress(1,0)).GetLocal();
+				contactTable.push_back(contactEntry);
+			}
+			contactBetween[i][j] = false;	//Init structures
+		}
+		isHeFree[i] = true;	//Init structures
+		amIFree[i] = true;
 	}
+
+	//Actual number-crunching contact table generation
 	for (uint32_t initialcount = 1; initialcount < (duration * 100); initialcount++) { // 8640000 = [(24 x 3600 x 1000)/10ms] tens of milliseconds
-		t_now = initialcount * 10; //milliseconds
-		nanosatelliteNodesMobility->AdvancePositionNanosatellites(2 * M_PI / (double)nNanosats, nOrbits, t_now, true);
-		groundStationsNodesMobility->AdvancePositionGroundStations(t_now, true);
-		for (uint32_t i = 0; i < (nHotSpots+nNanosats+nColdSpots) ; i++) {
+		TNow = initialcount * 10; //milliseconds
+		nanosatelliteNodesMobility->AdvancePositionNanosatellites(2 * M_PI / (double)nNanosats, nOrbits, TNow, true);
+		groundStationsNodesMobility->AdvancePositionGroundStations(TNow, true);
+
+		for (uint32_t i = 0; i < nHotSpots+nNanosats+nColdSpots; i++) {
 			Ptr<MobilityModel> wirelessNode1Mobility = allWirelessNodes.Get(i)->GetObject<MobilityModel> ();
-			Vector position1 = wirelessNode1Mobility->GetPosition();
-			for(uint32_t j=0; j < (nHotSpots+nNanosats+nColdSpots); j++) {
-				if (((i < nHotSpots) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats)))) || ((i >= (nHotSpots+nNanosats)) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats)))) || (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && (i != j))) {			// HSs or CSs in contact with a SAT or SATs in contact with a GS or a SAT
-					Ptr<MobilityModel> wirelessNode2Mobility = allWirelessNodes.Get(j)->GetObject<MobilityModel> ();
-					Vector position2 = wirelessNode2Mobility->GetPosition();
+			//Vector position1 = wirelessNode1Mobility->GetPosition();
+			for(uint32_t k=0; k < nHotSpots+nNanosats+nColdSpots; k++) {
+
+				// HSs or CSs in contact with a SAT or SATs in contact with a GS or a SAT, GS in contact with GS makes no sense
+				if (((i < nHotSpots) && ((k >= nHotSpots) && (k < (nHotSpots+nNanosats)))) || ((i >= (nHotSpots+nNanosats)) && ((k >= nHotSpots) && (k < (nHotSpots+nNanosats)))) || (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && (i != k))) {
+					Ptr<MobilityModel> wirelessNode2Mobility = allWirelessNodes.Get(k)->GetObject<MobilityModel> ();
+					//Vector position2 = wirelessNode2Mobility->GetPosition();
 					double distance = wirelessNode1Mobility->GetDistanceFrom(wirelessNode2Mobility);
 					//A  threshold is defined to ensure a minimum of margin: the contact time is saved as a little bit shorter, this way there is still time for a very narrow ack for example
 					double threshold = 0;
-					if (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && ((j >= nHotSpots) && (j < (nHotSpots+nNanosats))))
-						threshold = (99*TX_RANGE_WIRELESS_TRANSMISSION_NS_NS/100);
+					if (((i >= nHotSpots) && (i < (nHotSpots+nNanosats))) && ((k >= nHotSpots) && (k < (nHotSpots+nNanosats))))
+						threshold = (99 * TX_RANGE_WIRELESS_TRANSMISSION_NS_NS / 100);
 					else
-						threshold = (99*TX_RANGE_WIRELESS_TRANSMISSION_GS_NS/100);
-					if (distance  <=  threshold) {
-						if (start_contact[i][j] == false) {
-							start_contact[i][j] = true;
-							contactTable[i].t_start.push_back(t_now);
-							//Here remains only a single line with "2", the TX IP
+						threshold = (99 * TX_RANGE_WIRELESS_TRANSMISSION_GS_NS / 100);
 
-							contactTable[i].node_in_contact_with.push_back(allWirelessNodes.Get(j)->GetObject<Ipv4>()->GetAddress(2,0).GetLocal());
-
-						}
+					//If they are above the threshold but a contact was happening, close and save the contact
+					if (distance > threshold && contactBetween[i][k]) {
+						isHeFree[k] = true;
+						amIFree[i] = true;
+						contactBetween[i][k] = false;
+						contactTable[i].t_end.push_back(TNow);
+						//Write on te file this contact
+						stringstream contactFile;
+						contactFile << tempPath << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
+						const char* reportName = contactFile.str().c_str(); //Just to get the file name in a char array
+						ofstream report;
+						report.open(reportName, ios::out | ios::app | ios::binary);
+						report.setf(ios_base::fixed);
+						report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << (long)((*(contactTable[i].t_end.end() - 1) / 1000.0 - *(contactTable[i].t_start.end() - 1) / 1000.0) * TX_RATE_WIRELESS_LINK) << "\n";
+						report.close ();
 					}
-					else {
-						if (start_contact[i][j] == true) {
-							stringstream contactFile;
-							contactFile << "/home/tesista/Contact_Tables/" << nHotSpots << "_HSs_" << nNanosats << "_SATs_" << nColdSpots << "_CSs_" << nOrbits << "_orbits.txt";
-							string tmp = contactFile.str();
-							const char* reportName = tmp.c_str();
-							ofstream report;
-							report.open(reportName, ios::out | ios::app | ios::binary);
-							report.setf(ios_base::fixed);
-							start_contact[i][j] = false;
-							contactTable[i].t_end.push_back(t_now);
-							report << contactTable[i].this_node_address << " " << *(contactTable[i].node_in_contact_with.end()-1) << " " << *(contactTable[i].t_end.end()-1) << " " << *(contactTable[i].t_start.end()-1) << " " << (long)((*(contactTable[i].t_end.end() - 1) / 1000.0 - *(contactTable[i].t_start.end() - 1) / 1000.0) * TX_RATE_WIRELESS_LINK) << "\n";
-							//Update on the progress
-							cout << " " << initialcount / duration << "% ";
-							report.close ();
-						}
+					//If they are close enough and no contact is already established, start a new contact
+					if(distance <= threshold && !contactBetween[i][k] && amIFree[i] && isHeFree[k]){
+						contactBetween[i][k] = true;
+						isHeFree[k] = false;
+						amIFree[i] = false;
+						contactTable[i].t_start.push_back(TNow);
+						//Here remains only a single line with "2", the TX IP
+						contactTable[i].node_in_contact_with.push_back(allWirelessNodes.Get(k)->GetObject<Ipv4>()->GetAddress(2,0).GetLocal());
 					}
 				}
 			}
 		}
+		//Update on the progress
+		cout << "\r" << initialcount / duration << "% ";
 	}
+
 	groundStationsNodesMobility->SetInitialPositionGroundStations(hotSpotNodesContainer, coldSpotNodesContainer, nHotSpots, nColdSpots, false);
 	nanosatelliteNodesMobility->SetInitialPositionNanosatellites(nanosatelliteNodesContainer, nOrbits, false);
 
-	 */
+	cout << "Done generating contact table. It took: " << (time(NULL) - startTime) / 60 << "min and " << (time(NULL) - startTime) % 60 << " sec\n";
+	return 0;
 
 
 	// CENTRAL NODE
@@ -1574,7 +1587,7 @@ int main (int argc, char *argv[])
 			app[j + 1 + (uint32_t)nHotSpots + (uint32_t)nNanosats + (uint32_t)nColdSpots + (i * (uint32_t)nRuralNodesForEachColdSpot)]->SetRoutingEntry(routingEntry);
 		}
 	}
-
+/*
 	// READING CONTACT TABLE
 	cout << "Started reading contact table.\n";
 	//Getting ready to read contact table file
@@ -1626,7 +1639,7 @@ int main (int argc, char *argv[])
 			string addressRX = tmpRX.str();
 			//Actually compare the read address, if this is the right entry add the remaining information
 			if (sourceAddress == addressTX) {
-				Simulator::Schedule(MilliSeconds((uint32_t)startContactTime), &DtnApp::CheckWirelessBuffer, app[i+1], Ipv4Address(destinationAddress.c_str()), true, (floor((double)((uint32_t)endContactTime - (uint32_t)startContactTime) / 1000 * TX_RATE_WIRELESS_LINK / BUNDLEDATASIZE)));
+				Simulator::Schedule(MilliSeconds((uint32_t)startContactTime), &DtnApp::CheckWirelessBuffer, app[i+1], Ipv4Address(destinationAddress.c_str()), true);
 				Simulator::Schedule(MilliSeconds((uint32_t)endContactTime), &DtnApp::StopWirelessTransmission, app[i+1]);
 			}
 			if(destinationAddress == addressRX) {
@@ -1642,7 +1655,7 @@ int main (int argc, char *argv[])
 		app[i]->contactTable = contactTable;
 
 	cout << "Done reading contact table.\n";
-
+*/
 	Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/AckTimeout", TimeValue (MilliSeconds (100)));
 
 
@@ -1656,7 +1669,7 @@ int main (int argc, char *argv[])
 	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);
 
 	for (uint32_t count = 1; count <= nBundles; count++) {
-		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 37000000);
+		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "33.0.0.2", 38000000);
 	}
 
 

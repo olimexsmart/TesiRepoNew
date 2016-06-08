@@ -36,10 +36,10 @@ const double SAT_POSITION_UPDATE_SPACE = SAT_POSITION_UPDATE_TIME * SAT_AVERAGE_
 const double SAT_POSITION_UPDATE_ANGLE = SAT_POSITION_UPDATE_SPACE / RADIUS_ORBIT;// angle covered to each nanosat during the update interval [rad]
 const double SAT_POSITION_UPDATE_BETA = M_PI / 12 * SAT_POSITION_UPDATE_TIME / 3600; // RAA updating [PI_/12 : 3600 = x : 0,01]  nanosat's position updating [m] during the update interval because of the eart's rotation
 
-const string tempPath = "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/";
-const string contactTablePath = "/home/tesista/Contact_Tables/";
-//const string tempPath = "/home/olli/ns-allinone-3.21/ns-3.21/Temp/";
-//const string contactTablePath = "/home/olli/ns-allinone-3.21/ns-3.21/Contact_Tables/";
+//const string tempPath = "/home/tesista/ns-allinone-3.21/ns-3.21/Temp/";
+//const string contactTablePath = "/home/tesista/Contact_Tables/";
+const string tempPath = "/home/olli/ns-allinone-3.21/ns-3.21/Temp/";
+const string contactTablePath = "/home/olli/ns-allinone-3.21/ns-3.21/Contact_Tables/";
 
 using namespace std;
 using namespace ns3;
