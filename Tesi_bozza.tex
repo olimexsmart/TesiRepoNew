@@ -1,0 +1,112 @@
+\documentclass[a4paper]{article}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{wrapfig}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+
+
+
+\begin{document}
+	\centerline{\sc Bozza Tesi}
+	\centerline{\sc \large Routing di sorgente in reti DTN deterministiche}
+	\centerline{\sc Luca Olivieri}
+	\vspace{2pc}
+	
+	\tableofcontents
+	
+	\clearpage
+	\section{Introduzione}
+	
+	\section{Delay Tolerant Networks}
+		
+		\subsection{Origini e idea generale}
+		{\sc Breve introduzione a reti DTN.}
+		
+		Le reti convenzionali male si adattano in condizioni ambientali estreme e in recenti anni questi problemi sono stati oggetto di ricerca. I principali limiti riguardano capacità di rete limitata, movimento, scarsa disponibilità di energia e memoria, ma soprattutto lunghi ritardi e connettività intermittente. Queste ultime limitazioni saranno la caratteristica principale di questo lavoro, incentrato su reti di tipo satellitare dove il costante movimento orbitale impone una connettività intermittente e la notevole distanza tra i nodi risente del limite di propagazione della luce. La comune pila ISO/OSI male si adatta a queste condizioni, soffrendo a più livelli delle peculiari caratteristiche della rete. In particolare la combinazione TCP/IP è resa inutilizzabile da questi impedimenti e questo argomento verrà approfondito nel prossimo capitolo. Varie soluzioni sono state proposte per affrontare questo problema, tra cui i Performance Enhancing Proxies (PEPs) che però, oltre a non rappresentare una vera soluzione, creano problemi di incompatibilità con gli attuali protocolli di sicurezza.
+		
+		Una valida soluzione alternativa è l'architettura DTN, che introduce un protocollo, chiamato Bundle Protocol (BP), sovrastante il livello di trasporto (TCP, UDP, etc..) o il livello fisico (Bluetooth, Ethernet, ...). Questa aggiunta permette la memorizzazione su lunghi periodi ai nodi intermedi, permettendo così di poter affrontare interruzioni del canale e lunghi ritardi. Dividendo il percorso end-to-end in più salti di tipo DTN si estende il concetto di TCP-splitting già utilizzato sui PEP, permettendo di usare protocolli specializzati necessari, ad esempio, sui link satellitari.
+		
+		\subsection{Limitation of conventional protocols in challenged environments}
+		{\sc Differences from conventional networking.
+		TCP and UDP limitations.}
+		
+		Per meglio comprendere le limitazioni che i protocolli standard di Internet hanno in condizioni di rete precarie verrà proposto un esempio. Consideriamo uno scenario composto da un centro di ricerca, un complesso di antenne, un satellite in orbita marziana, un'antenna e una rete di sensori su Marte. La situazione è schematizzata nella figura (ref to im). 
+		
+		Il percorso che divide il laboratorio dalle antenne per lo spazio profondo è una rete Internet convenzionale, caratterizzata da:
+		\begin{itemize}
+			\item Basse latenze, nell'ordine dei millisecondi.
+			\item Alte velocità, fino a qualche Gb/s
+			\item Comunicazione bidirezionale
+			\item Connettività sorgente-destinazione continua
+		\end{itemize}
+		Quindi in questo tratto lo stack TCP/IP è usato nelle sue condizioni nominali, potendo offrendo tutti i servizi che conosciamo come frammentazione e ritrasmissione automatica. 
+		
+		Analizzando invece il secondo tratto di comunicazione, tra il complesso di antenne e l'orbiter marziano, ci accorgiamo che la situazione è ben diversa:
+		\begin{itemize}
+			\item Lunghe latenze di propagazione, nell'ordine di minuti
+			\item Basse velocità, tipicamente qualche decina di Kb/s
+			\item Interruzioni a causa di interferenze
+			\item Connessione deterministicamente intermittente
+		\end{itemize}
+		Le lunghe latenze rendono inutilizzabile il meccanismo di ritrasmissione del TCP eccedendo abbondantemente i timeout propri del protocollo. Inoltre il meccanismo di handshake a tre stadi si protrarrebbe fino ad occupare gran parte dell'oportunità di contatto. Protocolli alternativi al TCP sono l'UDP, che però non offre meccanismi di ritrasmissione automatica, e altri più esotici che comunque non produrrebbero risultati soddisfacenti per le stesse ragioni del TCP.
+		Risulta quindi che non è possibile usare un unico stack di protocolli su tutti i segmenti della rete, pur rimanendo nella necessità di avere un meccanismo di ritrasmissione automatico (ARQ). 
+		Infine l'ultimo impedimento è la connessione intermittente che dai normali sistemi di routing è elaborata come una totale disconnessione eccedendo i tempi di timeout standard. Il nodo è quindi considerato strutturalmente perso piuttosto che in una disconnessione pianificata e di conseguenza un tipico calcolo di percorso basato su IP non è possibile.
+		
+		
+		\subsection{DTN architecture}
+		{\sc Technical details like Boundle Protocol, overlay, information storage, fragmentation}
+		L'archittettura DTN è basata sull'introduzione di un nuovo strato protocollare a livello di trasporto o anche livelli più bassi chiamato Bundle Protocol (BP). Il punto essenziale è dotare i nodi della capacità di gestire ritardi e disconnessioni, permettendo di memorizzare i dati localmente in attesa dell'opportunità per inoltrarli al prossimo nodo. 
+		
+		Il Bundle Protocol è in grado di interfacciarsi con i livelli inferiori, generalmente di trasporto, per mezzo di Convergence Layer Adapters (CLAs). Nel tempo sono stati definiti vari CLA, a cominciare dai protocolli di trasporto più comuni come TCT, UDP, LTP, passando poi anche nella seconda versione (DTN2) a protocolli di livello datalink come Bluetooth ed Ethernet. 
+		In combinazione con il BP, ogni nodo può utilizzare il CLA meglio adatto per l'inoltro successivo.
+		
+		
+		\subsection{DTN as evolution of TCP splitting}
+		{\sc Not so in depth}
+		
+	
+	\section{Nanosatellite DTN Network}
+		
+		\subsection{Framework}
+		{\sc General aim and description}
+		
+		\subsection{Satellite platform and orbital mechanics}
+		{\sc About satellites and orbit classification.
+		Description of our satellite configuration.}
+		
+		\subsection{Network architecture}	
+		{\sc Hot spots, cold spots, nanosatellites, central node...}
+		
+	
+		
+		\subsection{Networking in rural area}
+			{\sc Real world application of the network }
+			\subsubsection{Introduction}
+			{\sc Why Internet access is important in rural areas}
+			\subsubsection{Other approaches}
+			{\sc Google and his baloons, Daknet, kiosk}
+			\subsubsection{Nanosatellite approach motivation}
+			{\sc Why this a valid opportunity}
+		
+		
+	\section{Source Contact Graph Routing}
+	
+		\subsection{Overview}
+		
+		\subsection{Contact prediction}
+		
+		\subsection{Concepts of a deterministic network}
+		
+		\subsection{Routing algorithm}
+		
+	\section{Simulation results and performance analysis}
+		
+			\subsection{Simulation setup}
+			ns3 descrption and the modelling of the network on it
+	
+	\section{Conclusion}
+	
+\end{document}

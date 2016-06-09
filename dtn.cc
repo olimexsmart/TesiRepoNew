@@ -117,7 +117,7 @@ public:
 	//Prototypes of new functions
 	vector<mypacket::BndlPath> FindPath(Ipv4Address destinationAddress, uint32_t TOV, uint32_t SOB);
 	void SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere);
-	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > allPaths, Ipv4Address coldSpotAddress, uint32_t SOB);
+	vector<mypacket::BndlPath> ChoosePath(vector< vector<mypacket::BndlPath> > &allPaths, Ipv4Address coldSpotAddress, uint32_t SOB);
 	int GetNodeType(Ipv4Address address);
 	bool CheckContact(uint32_t volumeRemaining, uint32_t SOB);
 	void PrintSimulationStatus();
@@ -436,6 +436,8 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(Ipv4Address destinationAddress, ui
 	path will be taken by a separate function.
  */
 void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere){
+	if(allPaths.size() > 10) return; //Avoid building enormous structures, as for now we take the first anyway.
+
 	//Routine here to find the entry in the contactTable starting from an IP address
 	uint32_t thisNode; //Holds the index of the contact table corresponding to the node considered in this call
 	for(thisNode = 0; thisNode < contactTable.size(); thisNode++)
@@ -479,7 +481,7 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 			mypacket::BndlPath pathEntry = mypacket::BndlPath(contactTable[thisNode].t_start[k], nextHop);
 			newPath.insert(newPath.begin(), pathEntry);  //This should produce a vector beginning with an HS and ending with a CS
 
-			//This gets to recognize the type of node, if == 1 it's a hotspot
+			//This gets to recognize the type of node, if == 1 it's a hotspot, the path is completed and we need to save it
 			//If it's a two is a nanosatellite, recall this function
 			if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 1)
 				allPaths.push_back(newPath);
@@ -487,6 +489,7 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 				SourceContactGraphRouting(allPaths, nextHop, contactTable[thisNode].t_start[k], SOB, newPath);
 		}
 	}
+	untilHere.clear();
 }
 
 /*
@@ -529,7 +532,7 @@ bool DtnApp :: CheckContact(uint32_t volumeRemaining, uint32_t SOB){
 	This for now simply finds the fastest route, in a future the decision could be made on
 	optimization rules like a omogeneous load between nodes.
  */
-vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPath> > allPaths, Ipv4Address coldSpotAddress, uint32_t SOB){
+vector<mypacket::BndlPath> DtnApp :: ChoosePath(vector< vector<mypacket::BndlPath> > &allPaths, Ipv4Address coldSpotAddress, uint32_t SOB){
 	//Choose here the path, following diversified logics
 
 	//The second index points at the start time of the contact between the nanosat and the coldspot
@@ -997,16 +1000,16 @@ int main (int argc, char *argv[])
 	cout << "Started\n";
 
 
-	nHotSpots = 8;
-	nNanosats = 42;
-	nColdSpots = 16;
+	nHotSpots = 16;
+	nNanosats = 24;
+	nColdSpots = 32;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
-	nBundles = 1000;
-	TOV = 3600000; //One hour in millis
-
+	//nBundles = 1000;
+	//TOV = 3600000; //One hour in millis
 	//uint32_t duration = 10*86400;	// [s] 86400 (24h)
 	duration = 86400;	// [s] 86400 (24h)
+	
 
 	CommandLine cmd;
 	cmd.AddValue("nHotSpots", "Number of hot spots", nHotSpots);
@@ -1231,7 +1234,7 @@ int main (int argc, char *argv[])
 	Ptr<DtnApp> app[1 + (uint32_t)nHotSpots + (uint32_t)nNanosats + (uint32_t)nColdSpots + ((uint32_t)nColdSpots * (uint32_t)nRuralNodesForEachColdSpot)];
 
 	//CONTACT TABLE GENERATOR
-
+/*
 	vector<ContactEntry> contactTable;
 	ContactEntry contactEntry;
 	NodeContainer allWirelessNodes;
@@ -1240,12 +1243,12 @@ int main (int argc, char *argv[])
 	allWirelessNodes.Add (coldSpotNodesContainer);
 	double TNow;
 	bool contactBetween[nHotSpots + nNanosats + nColdSpots][nHotSpots + nNanosats + nColdSpots];
-	/*	Needed to avoid multiple contacts
-	 * 	At this point the simulator can't handle multiple contacts
-	 * 	due to physical configuration of the WiFi links.
-	 * 	This way the all possible contacts other than the already established
-	 * 	are ignored.
-	 */
+	//	Needed to avoid multiple contacts
+	// 	At this point the simulator can't handle multiple contacts
+	// 	due to physical configuration of the WiFi links.
+	// 	This way the all possible contacts other than the already established
+	// 	are ignored.
+	 
 	bool isHeFree[nHotSpots + nNanosats + nColdSpots];
 	bool amIFree[nHotSpots + nNanosats + nColdSpots];
 
@@ -1326,7 +1329,7 @@ int main (int argc, char *argv[])
 
 	cout << "Done generating contact table. It took: " << (time(NULL) - startTime) / 60 << "min and " << (time(NULL) - startTime) % 60 << " sec\n";
 	return 0;
-
+*/
 
 	// CENTRAL NODE
 	Ptr<Socket> receivingTCPSocket;
@@ -1587,7 +1590,7 @@ int main (int argc, char *argv[])
 			app[j + 1 + (uint32_t)nHotSpots + (uint32_t)nNanosats + (uint32_t)nColdSpots + (i * (uint32_t)nRuralNodesForEachColdSpot)]->SetRoutingEntry(routingEntry);
 		}
 	}
-/*
+
 	// READING CONTACT TABLE
 	cout << "Started reading contact table.\n";
 	//Getting ready to read contact table file
@@ -1655,7 +1658,7 @@ int main (int argc, char *argv[])
 		app[i]->contactTable = contactTable;
 
 	cout << "Done reading contact table.\n";
-*/
+
 	Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/AckTimeout", TimeValue (MilliSeconds (100)));
 
 
@@ -1667,11 +1670,13 @@ int main (int argc, char *argv[])
 
 
 	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);
+	
 
-	for (uint32_t count = 1; count <= nBundles; count++) {
-		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "33.0.0.2", 38000000);
+	for (uint32_t count = 1; count <= 2000; count++) {
+		Simulator::Schedule(Seconds (count * 20), &DtnApp::CreateBundleData, app[0], "32.0.0.2", count * 20000 + 46400000);
+		//Simulator::Schedule(Seconds (count + 2000), &DtnApp::CreateBundleData, app[0], "11.0.0.2", 35000000);
 	}
-
+	
 
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
 	for (uint32_t i = 0; i < nColdSpots; i++)
@@ -1681,9 +1686,11 @@ int main (int argc, char *argv[])
 
 	Simulator::Schedule(Seconds(1), &DtnApp::PrintSimulationStatus, app[0]);
 	Simulator::Stop (Seconds (duration));
+	cout << "Simulation started.\n";
 	Simulator::Run ();
 	Simulator::Destroy ();
 
+	cout << "\rSimulation progress: 100%";
 	cout << "\nSimulation ended. It took: " << (time(NULL) - startTime) / 60 << "min and " << (time(NULL) - startTime) % 60 << " sec\n";
 
 	return 0;
