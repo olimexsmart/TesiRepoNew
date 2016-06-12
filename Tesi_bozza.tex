@@ -23,15 +23,12 @@
 	\section{Delay Tolerant Networks}
 		
 		\subsection{Origini e idea generale}
-		{\sc Breve introduzione a reti DTN.}
 		
 		Le reti convenzionali male si adattano in condizioni ambientali estreme e in recenti anni questi problemi sono stati oggetto di ricerca. I principali limiti riguardano capacità di rete limitata, movimento, scarsa disponibilità di energia e memoria, ma soprattutto lunghi ritardi e connettività intermittente. Queste ultime limitazioni saranno la caratteristica principale di questo lavoro, incentrato su reti di tipo satellitare dove il costante movimento orbitale impone una connettività intermittente e la notevole distanza tra i nodi risente del limite di propagazione della luce. La comune pila ISO/OSI male si adatta a queste condizioni, soffrendo a più livelli delle peculiari caratteristiche della rete. In particolare la combinazione TCP/IP è resa inutilizzabile da questi impedimenti e questo argomento verrà approfondito nel prossimo capitolo. Varie soluzioni sono state proposte per affrontare questo problema, tra cui i Performance Enhancing Proxies (PEPs) che però, oltre a non rappresentare una vera soluzione, creano problemi di incompatibilità con gli attuali protocolli di sicurezza.
 		
 		Una valida soluzione alternativa è l'architettura DTN, che introduce un protocollo, chiamato Bundle Protocol (BP), sovrastante il livello di trasporto (TCP, UDP, etc..) o il livello fisico (Bluetooth, Ethernet, ...). Questa aggiunta permette la memorizzazione su lunghi periodi ai nodi intermedi, permettendo così di poter affrontare interruzioni del canale e lunghi ritardi. Dividendo il percorso end-to-end in più salti di tipo DTN si estende il concetto di TCP-splitting già utilizzato sui PEP, permettendo di usare protocolli specializzati necessari, ad esempio, sui link satellitari.
 		
-		\subsection{Limitation of conventional protocols in challenged environments}
-		{\sc Differences from conventional networking.
-		TCP and UDP limitations.}
+		\subsection{Limitazioni dei protocolli convenzionali in condizioni estreme}
 		
 		Per meglio comprendere le limitazioni che i protocolli standard di Internet hanno in condizioni di rete precarie verrà proposto un esempio. Consideriamo uno scenario composto da un centro di ricerca, un complesso di antenne, un satellite in orbita marziana, un'antenna e una rete di sensori su Marte. La situazione è schematizzata nella figura (ref to im). 
 		
@@ -62,6 +59,8 @@
 		
 		Il Bundle Protocol è in grado di interfacciarsi con i livelli inferiori, generalmente di trasporto, per mezzo di Convergence Layer Adapters (CLAs). Nel tempo sono stati definiti vari CLA, a cominciare dai protocolli di trasporto più comuni come TCT, UDP, LTP, passando poi anche nella seconda versione (DTN2) a protocolli di livello datalink come Bluetooth ed Ethernet. 
 		In combinazione con il BP, ogni nodo può utilizzare il CLA meglio adatto per l'inoltro successivo.
+		
+		
 		
 		
 		\subsection{DTN as evolution of TCP splitting}

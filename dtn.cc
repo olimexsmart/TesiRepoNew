@@ -436,7 +436,7 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(Ipv4Address destinationAddress, ui
 	path will be taken by a separate function.
  */
 void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere){
-	if(allPaths.size() > 10) return; //Avoid building enormous structures, as for now we take the first anyway.
+	//if(allPaths.size() > 5) return; //Avoid building enormous structures, as for now we take the first anyway.
 
 	//Routine here to find the entry in the contactTable starting from an IP address
 	uint32_t thisNode; //Holds the index of the contact table corresponding to the node considered in this call
@@ -450,8 +450,8 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 	uint32_t tStart;
 	uint32_t tEnd;
 	uint32_t tnow = Simulator::Now ().GetMilliSeconds();
-	for(tStart = 0; contactTable[thisNode].t_start[tStart] < tnow; tStart ++);
-	for(tEnd = 0; contactTable[thisNode].t_end[tEnd] < TOV; tEnd ++);
+	for(tStart = 0; (contactTable[thisNode].t_start[tStart] < tnow) && (tStart < contactTable[thisNode].t_start.size()); tStart ++);
+	for(tEnd = 0; (contactTable[thisNode].t_end[tEnd] < TOV) && (tEnd < contactTable[thisNode].t_end.size()); tEnd ++);
 
 	for(uint32_t k = tStart; k < tEnd; k++)
 	{
@@ -485,7 +485,7 @@ void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &a
 			//If it's a two is a nanosatellite, recall this function
 			if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 1)
 				allPaths.push_back(newPath);
-			else if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 2)
+			else if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 2 && allPaths.size() < 3)	//Avoid building enormous structures, as for now we take the first anyway.
 				SourceContactGraphRouting(allPaths, nextHop, contactTable[thisNode].t_start[k], SOB, newPath);
 		}
 	}
@@ -1000,9 +1000,9 @@ int main (int argc, char *argv[])
 	cout << "Started\n";
 
 
-	nHotSpots = 16;
+	nHotSpots = 8;
 	nNanosats = 24;
-	nColdSpots = 32;
+	nColdSpots = 16;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
 	//nBundles = 1000;
@@ -1669,14 +1669,33 @@ int main (int argc, char *argv[])
 	// Bundle transmission
 
 
-	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);
-	
+	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);	
+	//Duration: 86400
+	int i = 0;
+	for (uint32_t count = 1; count <= 16000; count += 16) {
+		//Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "18.0.0.2", count * 10000 + 36400000);
 
-	for (uint32_t count = 1; count <= 2000; count++) {
-		Simulator::Schedule(Seconds (count * 20), &DtnApp::CreateBundleData, app[0], "32.0.0.2", count * 20000 + 46400000);
-		//Simulator::Schedule(Seconds (count + 2000), &DtnApp::CreateBundleData, app[0], "11.0.0.2", 35000000);
+		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 1), &DtnApp::CreateBundleData, app[0], "12.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 2), &DtnApp::CreateBundleData, app[0], "13.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 3), &DtnApp::CreateBundleData, app[0], "14.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 4), &DtnApp::CreateBundleData, app[0], "15.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 5), &DtnApp::CreateBundleData, app[0], "16.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 6), &DtnApp::CreateBundleData, app[0], "17.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 7), &DtnApp::CreateBundleData, app[0], "18.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 8), &DtnApp::CreateBundleData, app[0], "19.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 9), &DtnApp::CreateBundleData, app[0], "20.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 10), &DtnApp::CreateBundleData, app[0], "21.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 12), &DtnApp::CreateBundleData, app[0], "22.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 12), &DtnApp::CreateBundleData, app[0], "23.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 13), &DtnApp::CreateBundleData, app[0], "24.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 14), &DtnApp::CreateBundleData, app[0], "25.0.0.2", 80000000);
+		Simulator::Schedule(Seconds (count + 15), &DtnApp::CreateBundleData, app[0], "26.0.0.2", 80000000);
+
+		i++;
 	}
 	
+	cout << i << '\n';
 
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
 	for (uint32_t i = 0; i < nColdSpots; i++)
