@@ -58,8 +58,20 @@
 		L'archittettura DTN è basata sull'introduzione di un nuovo strato protocollare a livello di trasporto o anche livelli più bassi chiamato Bundle Protocol (BP). Il punto essenziale è dotare i nodi della capacità di gestire ritardi e disconnessioni, permettendo di memorizzare i dati localmente in attesa dell'opportunità per inoltrarli al prossimo nodo. 
 		
 		Il Bundle Protocol è in grado di interfacciarsi con i livelli inferiori, generalmente di trasporto, per mezzo di Convergence Layer Adapters (CLAs). Nel tempo sono stati definiti vari CLA, a cominciare dai protocolli di trasporto più comuni come TCT, UDP, LTP, passando poi anche nella seconda versione (DTN2) a protocolli di livello datalink come Bluetooth ed Ethernet. 
-		In combinazione con il BP, ogni nodo può utilizzare il CLA meglio adatto per l'inoltro successivo.
+		In combinazione con il BP, ogni nodo può utilizzare il CLA meglio adatto per l'inoltro successivo. 
 		
+		L'uso del Bundle Protocol è accompagnato da dei principi di design a livello applicativo che contribuiscono ad ottenere migliori risultati:
+		\begin{itemize}
+			\item Gli applicativi sono tenuti a minimizzare gli scambi di andata e ritorno
+			\item Gli applicativi dovrebbero essere in grado di gestire interruzioni improvvise mantenendo il trasferimento attivo
+			\item Gli applicativi sono tenuti a specificare il tempo di validità dei dati e loro importanza relativa.
+		\end{itemize}
+		
+		
+		L'architettura DTN offre diversi nuove caratteristiche che saranno elencate e descritte di seguente.
+		\begin{itemize}
+			\item DTN come uno
+		\end{itemize}
 		
 		
 		
