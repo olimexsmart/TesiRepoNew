@@ -70,7 +70,17 @@
 		
 		L'architettura DTN offre diversi nuove caratteristiche che saranno elencate e descritte di seguente.
 		\begin{itemize}
-			\item DTN come uno
+			\item La DTN può agire da strato legante di tecnologie di comunicazione disomogenee, come reti wireless ad hoc di sensori, WLAN, link satellitari, internet, ecc. Perché il BP sia correttamente gestito, sui vari nodi coinvolti nella rete è necessario che ci sia installato il Bundle Protocol Agent (BPA), che permetterà di dividere il percorso in vari hop DTN. Nei vari hop potranno essere usati differenti CLA per adattarsi ai diversi protocolli a cui una rete disomogenea può appoggiarsi. Oppure utilizzando lo stesso CLA in hop successivi è possibile appoggiarsi a diverse varianti dello stesso protocollo. L'architettura multi-hop DTN può essere vista come una generalizzazione del TCP-splitting, aspetto che verrà approfondito nella prossima sezione.
+			
+			\item Possibilità di archiviazione ai nodi intermedi. Questa è un'importante differenza dallo stack TCP/IP tradizionale, dove in presenza di reti convenzionali, che assumono connettività persistente e brevi ritardi, i router intermedi trattengono l'informazione solo per brevi periodi e la memorizzazione a lungo termine è presente solo ai nodi finali. Questo perché appoggiandosi una connessione stabile si suppone che l'informazione possa essere recuperata direttamente dalla fonte. Tutto ciò ovviamente non è possibile nelle reti in condizioni estreme e, nell'ottica di riuscire ad affrontare i lunghi tempi di andata e ritorno e interruzioni di canale, nelle reti DTN è necessario che i nodi intermedi abbiano la possibilità di memorizzare a lungo termine l'informazione. Questo contribuisce alla robustezza dell'architettura in presenza di disturbi, disconnessioni e problemi tecnici temporanei come ad esempio riavvi del nodo. Da un altro punto di vista però la memorizzazione a lungo termine può portare a congestionare i nodi, questa è un aspetto da tenere a mente e gestire.
+			
+			\item Tenendo a mente il contesto generale di una rete prona a non avere una connessione persistente tra sorgente e destinazione, l'architettura DTN stabilisce che il nodo avente i dati è responsabile per questi ultimi. Quindi eventuali ritrasmissioni che nelle reti convenzionali sono gestite dai nodi finali qui sono gestite da ogni singolo nodo intermedio.
+			
+			\item Late Binding: ogni nodo della rete DTN è identificato da un Endpoint Identifier (EID), che sintatticamente è rappresentato da un Uniform Resource Identifier (URI). Nel Bundle Protocol non esiste concetto di indirizzo, l'instradamento è basato puramente su EID. Quindi la risoluzione DNS di un nome destinazione può essere posposta (Late Binding) fino a che non si entra in contatto con la struttura necessaria e il percorso fatto finora è basato su EID. Questa è una caratteristica che permette di aggirare la mancanza di specifiche strutture come un DNS in reti isolate.
+			
+			\item Il routing in questa architettura deve coinvolgere priorità diverse dalle reti tradizionali, come ad esempio la capacità di memorizzazione e la gestione dell'energia. Certamente il tempo di consegna rimane un aspetto importante, ma in questo contesto può essere soggetto a compromessi. Infine il routing deve gestire il concetto di contatto, che si può definire come intervallo di tempo nel quale dei nodi possono scambiarsi dati e con una certa aspettativa di banda. La  quantificazione di tutti questi aspetti non è banale.
+			
+			
 		\end{itemize}
 		
 		
