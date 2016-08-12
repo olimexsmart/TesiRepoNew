@@ -9,7 +9,6 @@
 
 
 
-
 \begin{document}
 	\centerline{\sc Bozza Tesi}
 	\centerline{\sc \large Routing di sorgente in reti DTN deterministiche}
@@ -214,37 +213,7 @@
 				 
 			\end{itemize}
 			
-			\subsubsection{Alternative commerciali}
-			Mentenere una copertura Internet globale non è semplice:
-			\begin{itemize}
-				\item Con una costellazione in GEO è possibile mentenere una connessione persistente con un puntamento fisso, inoltre la costellazione può essere composta da un numero minore di satelliti rispetto a quelli necessari in orbita LEO, con l'altitudine maggiore come motivazione diretta di questo fatto.
-				D'altra parte altezze più elevate comportano costi di lancio e piattaforma satellitare maggiori, infatti un satellite in questa orbita generelamente richiede un ivestimento intorno ai 300 milioni di dollari. Infine le zone polari non sono coperte per la posizione equatoriale dell'orbita GEO e le latenze sono alte a causa delle grandi distanze in gioco.
-				
-				\item Le costellazioni LEO sono in grado di mantenere una coperura globale sostituendosi a vincenda nella copertura durante il loro costante movimento, rendendo necessarie però antenne a puntamento automatico per ottenere velocità di trasferimento comparabili a quelle dei satelliti in GEO. Immaginando l'antenna del satellite puntata in direzione del suolo, ci si rende conto come la massima qualità di ricezione, ottenibile quando le due antenne, suolo e satellite, sono allineate, possa durare al massimo qualche istante. Lo svantaggio della minor banda viene compensato da una latenza decisamente minore. L'investimento si abbassa anch'esso, ma rimane comunque alto intorno ai 150 - 200 milioni di dollari, tenendo a mente che sono necessari più satelliti.
-			\end{itemize}
 			
-			L'alternativa a queste due opzioni è rappresentata dai CubeSat, un tipo standardizzato di nanosatellite, in termini di volume e peso. Nello specifico, l'unità base del CubeSat è un parallelepipedo 10x10x11.35 cm, con un peso massimo di 1.33Kg, pensata per mettere a disposizione un litro di volume all'interno. Le unità base possono essere combinate per ottenere CubeSat più capienti. La standardizzazione, come per altro in ogni ambito ingegneristico, permette di abbattere ulteriormente i costi di lancio, non essendo necessario sviluppare una piattaforma nuova per ogni nanosatellite e semplificare le interazioni tra i gruppi che si occupano del lancio e della costruzione del nanosatellite.
-			
-			Il principale vantaggio nell'uso dei nanosatelliti è il costo di investimento decisamente abbattuto. Il costo di assembleaggio stimato si aggira intorno ai 50000\$ - 100000\$, mentre il costo di lancio stimato di tre CubeSat è all'incirca di 200000\$. Il costo totale, approssimativo, di una rete composta da 150 nanosatelliti e 3000 stazioni di terra si può stimare essere all'incirca di 33 milioni di dollari con un'aspettativa operativa di 5 anni. A 24 Mbps il volume totale scambiato sarebbe di 225 TB, per un costo al MB di 0.13\$. 
-			%%Calcolo che non comprendo appieno onestamente
-			Per confronto, vengono riportati alcuni esempi di tariffe commerciali (2009):
-			\begin{itemize}
-				\item {\it ORBCOMM}, servizio tipicamente utilizzato per brevi messaggi, propone 1000 caratteri a 1.40\$, tradotto in nostri termini 1433.60\$ per MB.
-				\item {\it Iridium} offre un piano di connessione a tempo, 5000 minuti, utilizzabili in due anni, per 4994.99\$, circa 1\$ al minuto. Essendo che la velocità offerta era all'incirca 2400bps, traducibile in 1MB all'ora, equivale a 60\$ per MB.
-				\item {\it INMARSAT}, che usa una costellazione di tre satelliti in GEO, offre una tariffa al MB di 7.50\$
-			\end{itemize}
-			%%Verificare un secondo questi dati
-			
-			\subsubsection{La nostra costellazione}
-			La costellazione di satelliti scelta per questo lavoro è costituita da satelliti in orbita LEO, che a confronto con un'orbita GEO offre il vantaggio di investimenti iniziali e latenze minori, ma ha il principale svantaggio che i satelliti sono in costante movimento rispetto alla superficie e quindi l'apparato di terra deve essere in grado di orientare l'antenna per rimanere agganciato al segnale. Questa configurazione non permette, in termini di qualità del segnale, prestazioni ottimali in generale o comunque per tutta la durata del contatto. Dal punto di vista del satellite invece il puntamento è ad una generica, ma nota, inclinazione verso terra. Rimane vero però che un singolo satellite in orbita GEO costituisce un punto di criticità in caso di malfunzionamento rispetto ad una costellazione sparsa in orbita LEO. Questi compromessi però sono tutti a vantaggio del requisito principale di questo lavoro, ridurre i costi d'investimento per la creazione di una rete DTN in grado di estendere la copertura Internet a zone rurali. Una costellazione in orbita GEO rimane preferita in ambito di telecomunicazioni, ma comporta costi estremamente elevati. Sempre in quest'ottica è stata fatta la scelta del tipo di satellite, il nanosatellite.
-			
-			I nanosatelliti sono una realtà piuttosto recente, spesso utilizzati come piattaforme di test per nuove tecnologie o come piattaforma orbitale congiunta di università per esperimenti o dimostrazioni. Le loro peculiarità sono le dimensioni estremamente ridotte e standardizzate, nell'ordine delle decine di centimetri per lato, e il basso costo di progettazione, produzione e mantenimento. Eliminando completamente caratteristiche come un propulsore, pannelli solari orientabili, antenne ad alto guadagno, sistemi ridondanti, ecc... si possono ridurre notevolmente dimensioni e costi. In particolare i costi di messa in orbita sono particolarmente abbattuti in quanto possono essere aggregati ad altri lanci come carichi secondari. Infine alcuni sono lanciati insieme al rifornimento periodico alla Stazione Spaziale Internazionale (ISS) e da essa catapultati in orbita tramite un apposito lanciatore. 
-			
-			%%Chiedere a fabio maggiori informazioni sui parametri orbitali 
-			%%Inserire i confronti con le attuali proposte commerciali e la motivazione di scelta di questi parametri orbitali.
-			
-			
-		
 		
 		\subsection{Architettura di rete}	
 		
@@ -283,31 +252,71 @@
 		
 		\subsection{Connessioni alla Rete in aree rurali}
 			
-			L'accessibilità della conoscenza è diventata una delle pietre miliari del nostro tempo, uno dei simboli più marcati del progresso portato dall'evoluzione impetuosa del settore delle Comunicazioni e delle Tecnologie dell'Informazione (ICT). Questo progresso però si è affermato principalmente nelle aree più sviluppate, andando inoltre a migliorare enormemente le infrastrutture burocratiche e organizzative. Il grande freno nell'affermazione di tali tecnologie in zone più disagiate o rurali è il costo dell'infrastruttura di supporto, che richiederebbe creare da zero una rete in zone dalle condizioni naturali estremamente avverse o dalla situazione politica incerta e disinteressata. Inoltre la scarsa densità abitativa di tali aree non potrebbe giustificare a maggior ragione il dispiegamento di una rete ad alta capacità. Esclusi luoghi dalle condizioni naturali estreme, come latitudini polari o atolli oceanici, le restanti zone rurali potrebbero essere caratterizzate inoltre da problemi di emergenza umanitaria ben più gravi della mancanza dell'infrastruttura ICT, ma se posta in questi termini il divario con la civiltà urbana occidentalizzata non potrebbe che aumentare. Nel prossimo capitolo saranno esposti alcuni approcci sviluppati per creare un'alternativa alla rete convenzionale che noi conosciamo nella nostra quotidianità.
+		L'accessibilità della conoscenza è diventata una delle pietre miliari del nostro tempo, uno dei simboli più marcati del progresso portato dall'evoluzione impetuosa del settore delle Comunicazioni e delle Tecnologie dell'Informazione (ICT). Questo progresso però si è affermato principalmente nelle aree più sviluppate, andando inoltre a migliorare enormemente le infrastrutture burocratiche e organizzative. Il grande freno nell'affermazione di tali tecnologie in zone più disagiate o rurali è il costo dell'infrastruttura di supporto, che richiederebbe creare da zero una rete in zone dalle condizioni naturali estremamente avverse o dalla situazione politica incerta e disinteressata. Inoltre la scarsa densità abitativa di tali aree non potrebbe giustificare a maggior ragione il dispiegamento di una rete ad alta capacità. Esclusi luoghi dalle condizioni naturali estreme, come latitudini polari o atolli oceanici, le restanti zone rurali potrebbero essere caratterizzate inoltre da problemi di emergenza umanitaria ben più gravi della mancanza dell'infrastruttura ICT, ma se posta in questi termini il divario con la civiltà urbana occidentalizzata non potrebbe che aumentare. Nel prossimo capitolo saranno esposti alcuni approcci sviluppati per creare un'alternativa alla rete convenzionale che noi conosciamo nella nostra quotidianità.
+			
+				\subsubsection{Motivazione dell'approccio nanosatellitare}			
+					
+				Questa ricerca punta alla creazione di una rete globale e indipendente, i cui principali vantaggi sono in primo luogo il basso costo, sempre in paragone con le alternative esistenti che propongono servizi comparabili esposti precedentemente, la scalabilità, essendo che è possibile un dispiegamento graduale delle risorse, aggiungendo man mano che i fondi diventano disponibili nuovi nanosatelliti, HotSpots e zone rurali. Da questo punto si ottiene un'importante altra conseguenza, la robustezza della rete. La perdita di uno o più nodi non costituisce una criticità per il funzionamento complessivo. 
+					
+				Altri vantaggi nell'usare una rete satellitare derivano dalla totale indipendenza dalle condizioni e vicissitudini superficiali, quindi la rete è immune a disastri naturali e difficilmente soggetta a sabotaggi e censure politiche.
+					
 			\subsubsection{Altri approcci al problema}
 			
 			\begin{itemize}
-				\item {\bf Digital Gangetic Plains}
+				\item {\bf Digital Gangetic Plains \cite{raman2007experiences}}
 				
 				Questo progetto consiste nel coprire una vasta area di territorio con una rete WiFi 802.11. I vantaggi di questa tecnologia è che non ha costi proibitivi, occupa una porzione libera nello spettro di frequenze e offre alte velocità di connessione. La rete è composta da una serie di ripetitori WiFi atti a creare una rete {\it mesh}, cioè una rete connessa a grafo. Il nodo principale ha accesso alla rete Internet cablata e rappresenta il punto d'accesso. I ponti radio possono essere distanti decine di kilometri e sono collegati da antenne direzionali ad alto guadagno. 
 				
-				\item {\bf DakNet}
+				\item {\bf DakNet \cite{hasson2003daknet}}
 				
 				Questa soluzione coinvolge l'utilizzo di infrastrutture esistenti per il trasporto fisico dei dati, nello specifico mezzi pubblici come autobus. Il veicolo diventa la spola, similmente al nanosatellite del nostro caso, tra la zona rurale e il punto di accesso a Internet. Muovendosi lungo il suo percorso programmato, il mezzo prende in carico le richieste da parte degli utenti sparsi per i villaggi e una volta arrivato in contatto con il punto di accesso recupera tutti i dati per consegnarli al prossimo giro. Il cuore pulsante a bordo del bus è un PC Linux embedded e comunicazione WiFi. 
 				
-				\item {\bf KioskNet}
+				\item {\bf KioskNet \cite{seth2006low}}
 				
 				Il termine {\it kiosk} è traducibile come "chiosco" ma prende l'accezione specifica di una sorta di internet caffè, utilizzabile a pagamento per l'accesso a Internet pubblico. Questo genere di attività è fiorente in zone rurali, ma soffre di problemi legati all'infrastruttura fatiscente che lo supporta, cominciando dall'energia elettrica per finire alla connessione telematica. Lo scopo quindi è stato di semplificare la tecnologia supportante questo servizio per contenere costi e manutenzione, cominciando con l'usare PC embedded a basso consumo per potersi rendere indipendenti con l'utilizzo di pannelli solari, continuando poi adottando un paradigma DTN con idea simile al DakNet in quanto a riutilizzo dei sistemi di trasporto esistenti.
 								
 			\end{itemize}
 			
-		Il limite primo di tutte queste proposte è l'affrontare il problema con un approccio locale, sempre a rischio di fattori ambientali e politici instabili. L'alternativa proposta da questo lavoro di ricerca è chiamata "Ring Road" e non è altro che l'infrastruttura esposta ad inizio capitolo.
+			Il limite primo di tutte queste proposte è l'affrontare il problema con un approccio locale, sempre a rischio di fattori ambientali e politici instabili. L'alternativa proposta da questo lavoro di ricerca è chiamata "Ring Road" \cite{burleigh2011toward} e non è altro che l'infrastruttura esposta ad inizio capitolo.
+		
+		\subsubsection{Alternative commerciali}
+		Mentenere una copertura Internet globale non è semplice:
+		\begin{itemize}
+			\item Con una costellazione in GEO è possibile mentenere una connessione persistente con un puntamento fisso, inoltre la costellazione può essere composta da un numero minore di satelliti rispetto a quelli necessari in orbita LEO, con l'altitudine maggiore come motivazione diretta di questo fatto.
+			D'altra parte altezze più elevate comportano costi di lancio e piattaforma satellitare maggiori, infatti un satellite in questa orbita generelamente richiede un ivestimento intorno ai 300 milioni di dollari. Infine le zone polari non sono coperte per la posizione equatoriale dell'orbita GEO e le latenze sono alte a causa delle grandi distanze in gioco.
 			
-		\subsubsection{Motivazione dell'approccio nanosatellitare}			
-
-		Questa ricerca punta alla creazione di una rete globale e indipendente, i cui principali vantaggi sono in primo luogo il basso costo, sempre in paragone con le alternative esistenti che propongono servizi comparabili esposti precedentemente, la scalabilità, essendo che è possibile un dispiegamento graduale delle risorse, aggiungendo man mano che i fondi diventano disponibili nuovi nanosatelliti, HotSpots e zone rurali. Da questo punto si ottiene un'importante altra conseguenza, la robustezza della rete. La perdita di uno o più nodi non costituisce una criticità per il funzionamento complessivo. 
-			
-		Altri vantaggi nell'usare una rete satellitare derivano dalla totale indipendenza dalle condizioni e vicissitudini superficiali, quindi la rete è immune a disastri naturali e difficilmente soggetta a sabotaggi e censure politiche.
+			\item Le costellazioni LEO sono in grado di mantenere una coperura globale sostituendosi a vincenda nella copertura durante il loro costante movimento, rendendo necessarie però antenne a puntamento automatico per ottenere velocità di trasferimento comparabili a quelle dei satelliti in GEO. Immaginando l'antenna del satellite puntata in direzione del suolo, ci si rende conto come la massima qualità di ricezione, ottenibile quando le due antenne, suolo e satellite, sono allineate, possa durare al massimo qualche istante. Lo svantaggio della minor banda viene compensato da una latenza decisamente minore. L'investimento si abbassa anch'esso, ma rimane comunque alto intorno ai 150 - 200 milioni di dollari, tenendo a mente che sono necessari più satelliti.
+		\end{itemize}
+		
+		
+		%%Calcolo che non comprendo appieno onestamente
+		Per confronto, vengono riportati alcuni esempi di tariffe commerciali (2009):
+		\begin{itemize}
+			\item {\it ORBCOMM}, servizio tipicamente utilizzato per brevi messaggi, propone 1000 caratteri a 1.40\$, tradotto in nostri termini 1433.60\$ per MB.
+			\item {\it Iridium} offre diversi piani con un costo variabile a seconda delle proprie esigenze, solo per termine di confronto, si riporta il piano Combo A, 69\$ mensili per 13.8\$ per MB, e il Combo F, 1499\$ al mese e 1.10\$ per MB.
+			\item {\it INMARSAT}, che usa una costellazione di tre satelliti in GEO, offre una tariffa al MB di 7.50\$
+		\end{itemize}
+		%%Verificare un secondo questi dati
+		Occorre far notare che questi servizi sono usufruibili tramite un modulo di collegamento personale, delle dimensioni paragonabile a quelle di un portatile non troppo recente. Ogni compagnia menzionata usa una propria tecnologia non compatibile con le altre. I dettagli implementativi del livello radio e hardware della nostra soluzione non sono ancora stati definiti e non è neanche compito di questo gruppo di studio definirli, ma allo stato attuale la direzione implementativa non è quella di un oggetto personale che ha il compito di interfacciare il proprio PC, ad esempio, con la rete nanosatellitare, ma piuttosto una base condivisa a una zona, idealizzabile come una comunità o un villaggio, dove l'utenza si reca per usufruire del servizio. Questa scelta si pone in relazione con il tipo di contesto e utenza per cui questa rete è sviluppata. 
+		
+		Altro importante punto da sottolineare è il tipo di esperienza d'uso che consegue da una rete DTN, sostanzialmente diversa da quella a cui siamo comunemente abituati con la rete Internet. Il concetto di una rete tollerante alle disconnessioni e ritardi, non avente un percorso continuo tra sorgente e destinazione, ad esempio nella navigazione Internet ha l'effetto che tra la richiesta di una pagina e un'altra possono passare minuti, anche qualche decina. 
+		
+		Tutto questo si pone in linea con le alternatine di rete rurale proposte, mentre è incomparabile con i servizi commerciali menzionati, i quali offrono un'esperienza d'uso comparabile ad una rete convenzionale a velocità limitata. Nel contesto in cui la nostra soluzione si pone i limiti menzionati possono essere accettabili, essendo che lo scopo non è rendere disponibile una rete Internet paragonabile a quella convenzionale in ogni angolo del pianeta, ma piuttosto rendere disponibile Internet a zone e comunità che altrimenti non avrebbero possibilità di accedervi.
+		
+		Riassumendo quindi l'uso di nanosatelliti permetterebbe di evitare tutti gli svantaggi di una rete terrestre pur essendo più economica di una rete satellitare GEO o LEO. 
+		
+		\subsubsection{La nostra costellazione}
+		La costellazione di satelliti scelta per questo lavoro è in orbita LEO, che a confronto con un'orbita GEO offre il vantaggio di investimenti iniziali e latenze minori, ma ha il principale svantaggio che i satelliti sono in costante movimento rispetto alla superficie e quindi l'apparato di terra deve essere in grado di orientare l'antenna per rimanere agganciato al segnale. Come detto in precedenza, questa configurazione non permette, in termini di qualità del segnale, prestazioni ottimali in generale o comunque per tutta la durata del contatto. Inoltre un singolo satellite in orbita GEO costituisce un punto di criticità in caso di malfunzionamento rispetto ad una costellazione sparsa in orbita LEO. Questi compromessi però sono tutti a vantaggio del requisito principale di questo lavoro, ridurre i costi d'investimento per la creazione di una rete DTN in grado di estendere la copertura Internet a zone rurali. Una costellazione in orbita GEO rimane preferita in ambito di telecomunicazioni, ma comporta costi estremamente elevati. Sempre in quest'ottica è stata fatta la scelta del tipo di satellite, il nanosatellite.
+		
+		I nanosatelliti sono una realtà piuttosto recente, spesso utilizzati come piattaforme di test per nuove tecnologie o come piattaforma orbitale congiunta di università per esperimenti o dimostrazioni. Le loro peculiarità sono le dimensioni estremamente ridotte e standardizzate, nell'ordine delle decine di centimetri per lato, e il basso costo di progettazione, produzione e mantenimento. Eliminando completamente caratteristiche come un propulsore, pannelli solari orientabili, antenne ad alto guadagno, sistemi ridondanti, ecc... si possono ridurre notevolmente dimensioni e costi. In particolare i costi di messa in orbita sono notevolmente abbattuti in quanto possono essere aggregati ad altri lanci come carichi secondari. Infine alcuni sono lanciati insieme al rifornimento periodico alla Stazione Spaziale Internazionale (ISS) e da essa catapultati in orbita tramite un apposito lanciatore. 
+		Una soluzione pratica è costituita dai CubeSat, un tipo standardizzato di nanosatellite, in termini di volume e peso. Nello specifico, l'unità base del CubeSat è un parallelepipedo 10x10x11.35 cm, con un peso massimo di 1.33Kg, pensata per mettere a disposizione un litro di volume all'interno. Le unità base possono essere combinate per ottenere CubeSat più capienti. La standardizzazione, come per altro in ogni ambito ingegneristico, permette di abbattere ulteriormente i costi di lancio, non essendo necessario sviluppare una piattaforma nuova per ogni nanosatellite e semplificare le interazioni tra i gruppi che si occupano del lancio e della costruzione del nanosatellite.
+		
+		Il principale vantaggio nell'uso dei nanosatelliti è il costo di investimento decisamente abbattuto. Il costo di assembleaggio stimato si aggira intorno ai 50000\$ - 100000\$, mentre il costo di lancio stimato di tre CubeSat è all'incirca di 200000\$. Il costo totale, approssimativo, di una rete composta da 150 nanosatelliti e 3000 stazioni di terra si può stimare essere all'incirca di 33 milioni di dollari e con un'aspettativa operativa di 5 anni. A 24 Mbps il volume totale scambiato sarebbe di 225 TB, per un costo al MB di 0.13\$. Se questa cifra viene confrontata con quelle riportate nella sezione precedente ci percepisce una netta differenza, pur mettendo in conto le considerazioni dovute. 
+		
+		I parametri orbitali si rifanno alla costellazione Iridium \cite{fossa1998overview}, con i nanosatelliti distribuiti su piani orbitali inclinati di $86.4\,^{\circ}$. Il numero di orbite differenti è un parametro di simulazione su cui è possibile agire, le orbite vengono spaziate differenziando l'angolo RAAN, Right Ascension of the Ascending Node, in altre parole i piani orbitali sono ruotati, mantenendo la stessa inclinazione rispetto all'equatore, rispetto all'asse terrestre. I nanosatelliti sono distribuiti nelle orbite in numero uniforme, come anche è uniforme la loro disposizione sull'orbita. 
+		
+		Infine ripetiamo che il funzionamento a livello di rete è garantito dal Bundle Layer introdotto dall'architettura DTN, che permette la gestione della memorizzazione a lungo termine durante le lunghe disconnessioni. I Bundle Protocol Data Unit sono gestiti e instradati ad ogni nodo DTN intermedio. Senza discostarsi troppo dall'architettura DTN canonica, è necessario definirne una versione personalizzata progettata per la nostra particolare applicazione. I dettagli sono rimandati alla prossima sezione. 
+		
 			
 		
 		
