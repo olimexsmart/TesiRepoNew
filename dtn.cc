@@ -248,11 +248,37 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 				//The address of the node relative of this function call is obtained through this NICE looking expression
 				//If decision: 1 if hotspot or nanosat is the caller, 3 if coldspot
 				Ipv4Address thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (2, 0)).GetLocal();
+				//STATIC ROUTING
+				//In this case a HotSpot needs to upload the bundle to a nanosat
+				if(GetNodeType(thisAddress) == 1)
+				{
+					routingEntryFound.nextHopIP = nodeInContactWithWirelessAddress;
+					send = true;
+					//Break not needed here
+				}else if(GetNodeType(thisAddress) == 2 && GetNodeType(nodeInContactWithWirelessAddress) == 3)
+				{
+					uint8_t* addr = new uint8_t[4];
+					bndlHeader.GetDst().Serialize(addr);
+					uint8_t temp = addr[0] - 10 + nHotSpots + nNanosats;
+					addr[0] = 50;
+					addr[3] = temp;
+					Ipv4Address coldSpotAddress(addr[3] | addr[2]<<8 | addr[1]<<16 | addr[0]<<24);
+
+					if(coldSpotAddress == nodeInContactWithWirelessAddress)
+					{
+						routingEntryFound.nextHopIP = nodeInContactWithWirelessAddress;
+						send = true;
+					}
+				}
+
+				/*
 				if(GetNodeType(thisAddress) == 1 || GetNodeType(thisAddress) == 2)
 					thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (1, 0)).GetLocal();
 				else
 					thisAddress = (m_node->GetObject<Ipv4>()->GetAddress (3, 0)).GetLocal();
+				*/
 
+				/*
 				//Read all the path vector and search for this node address, it must be there
 				for (uint32_t i = 0; i < bndlHeader.GetPathVector().size(); i++) {
 					if(bndlHeader.GetPathVector()[i].GetNodeAddress() == thisAddress)
@@ -267,12 +293,13 @@ void DtnApp::CheckWirelessBuffer(Ipv4Address nodeInContactWithWirelessAddress, b
 							 * When this if fails, the send boolean is still on false,
 							 * the bundle is not sent and the main for
 							 * goes on the next bundle in the wireless buffer
-							 */
+
 						}
 						else
 							break; //On this break nothing is sent
 					}
 				}
+	*/
 			}
 			else
 			{	//Give back ack to the sender
@@ -416,17 +443,29 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(Ipv4Address destinationAddress, ui
 	 */
 	uint8_t* addr = new uint8_t[4];
 	destinationAddress.Serialize(addr);
-	uint8_t temp = addr[0] - 10 + nHotSpots + nNanosats;
-	addr[0] = 50;
-	addr[3] = temp;
-	Ipv4Address coldSpotAddress(addr[3] | addr[2]<<8 | addr[1]<<16 | addr[0]<<24);
+	uint8_t temp = addr[0] - 10 + nHotSpots + nNanosats - nColdSpots;
 	//Creating structures
-	vector< vector<mypacket::BndlPath> > allPaths;
-	vector<mypacket::BndlPath> untilHere;
+	//vector< vector<mypacket::BndlPath> > allPaths;
+	vector<mypacket::BndlPath> newPath;
 	//Begin of the iteration
-	SourceContactGraphRouting(allPaths, coldSpotAddress, TOV, SOB, untilHere);
+	//SourceContactGraphRouting(allPaths, coldSpotAddress, TOV, SOB, untilHere);
+	//return ChoosePath(allPaths, coldSpotAddress, SOB);
 
-	return ChoosePath(allPaths, coldSpotAddress, SOB);
+
+	/*
+	 * STATIC ROUTING COMMENT
+	 * To avoid extensive changes to the code, the PathVector is used to get the bundle
+	 * to the HotSpot, following the simplest rule of static routing possible in this context, assigning
+	 * equal number of ColdSpots to each HotSpot.
+	 * ceil is necessary since the numbering starts with one
+	 */
+	addr[0] = 9;
+	addr[3] = ceil((double)(nHotSpots * temp) / nColdSpots) + 1; //In wired addresses the central node is one
+	Ipv4Address hotSpotAddress(addr[3] | addr[2]<<8 | addr[1]<<16 | addr[0]<<24);
+	mypacket::BndlPath pathEntry = mypacket::BndlPath(0, hotSpotAddress);
+	newPath.insert(newPath.begin(), pathEntry);  //This should produce a vector beginning with an HS and ending with a CS
+
+	return newPath;
 }
 
 /*
@@ -1000,16 +1039,16 @@ int main (int argc, char *argv[])
 	cout << "Started\n";
 
 
-	nHotSpots = 8;
-	nNanosats = 42;
-	nColdSpots = 16;
+	nHotSpots = 16;
+	nNanosats = 24;
+	nColdSpots = 32;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
 	//nBundles = 1000;
 	//TOV = 3600000; //One hour in millis
 	//uint32_t duration = 10*86400;	// [s] 86400 (24h)
-	duration = 86400;	// [s] 86400 (24h)
-	
+	//duration = 86400;	// [s] 86400 (24h)
+	duration = 259200;
 
 	CommandLine cmd;
 	cmd.AddValue("nHotSpots", "Number of hot spots", nHotSpots);
@@ -1663,16 +1702,16 @@ int main (int argc, char *argv[])
 
 
 	/*
-	This is almost the end of the main: the remaining thing to do is to Schedule the first 
+	This is almost the end of the main: the remaining thing to do is to Schedule the first
 	occurence of the Simulation in order to start it. Specifically creating Bundles, according to the simlation needs.
 	 */
 	// Bundle transmission
 
 
-	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);	
+	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);
 	//Duration: 86400
-	for (uint32_t count = 1; count <= 2500; count++) {
-		Simulator::Schedule(Seconds (count * 20), &DtnApp::CreateBundleData, app[0], "23.0.0.2", count * 20000 + 36400000);
+	for (uint32_t count = 1; count <= 1000; count++) {
+		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "23.0.0.2", 0);
 /*		Simulator::Schedule(Seconds (count * 20 + 10), &DtnApp::CreateBundleData, app[0], "22.0.0.2", count * 20000 + 36400000);
 		Simulator::Schedule(Seconds (count * 20 + 5), &DtnApp::CreateBundleData, app[0], "37.0.0.2", count * 20000 + 36400000);
 		Simulator::Schedule(Seconds (count * 20 + 7), &DtnApp::CreateBundleData, app[0], "26.0.0.2", count * 20000 + 36400000);
@@ -1684,7 +1723,7 @@ int main (int argc, char *argv[])
 		//Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "18.0.0.2", 50000000);
 */
 	}
-	
+
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
 	for (uint32_t i = 0; i < nColdSpots; i++)
 		allIPNodes.Add(ruralNetworkNodesContainers[i]);
