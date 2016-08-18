@@ -6,11 +6,12 @@
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath}
-\usepackage{algorithm2e}
+\usepackage[linesnumbered,lined,boxed,commentsnumbered]{algorithm2e}
 \usepackage{bytefield}
 
 
 \begin{document}
+	
 	\centerline{\sc Bozza Tesi}
 	\centerline{\sc \large Routing di sorgente in reti DTN deterministiche}
 	\centerline{\sc Luca Olivieri}
@@ -385,6 +386,73 @@
 		% Diagramma con i due flussi che mostra i nodi coinvolti 
 		
 		\subsection{Algoritmo di instradamento}
+		Come ultimo tassello per completare il percorso logico è necessario introdurre il procedimento computazionale per calcolare il percorso alla sorgente. Innanzitutto è necessario esporre gli ingressi e le uscite dell'algoritmo, comprese le strutture dati e le funzioni di supporto. I dati su cui si basa l'instradamento sono contenuti nella Contact Table, quest'ultima però riordinata dal punto di vista del singolo nodo, quindi per ogni nodo si ha l'intera pletora di contatti previsti ordinati cronologicamente. L'unità base di tutta la struttura dati è il {\bf Contatto}, che contiene tutte le informazioni che lo riguardano. La serie di salti che dovrà compiere il bundle invece è contenuta in una struttura di tipo {\bf Percorso}, che è costituita da una serie di {\bf Contatti} ordinati cronologicamente. 
+		
+		I dati necessari da fornire in ingresso all'algoritmo sono i seguenti:
+		\begin{itemize}
+			\item {\bf Contact Table}
+			\item {\bf Indirizzo di destinazione}
+			\item {\bf TOV} Time Of Validity, indica il limite temporale entro il quale il bundle deve arrivare a destinazione. Oltre questo limite i dati perdono significato e possono essere scartati. Inoltre questo parametro ottempera le linee guida di design esposte nella sezione 2.3. Infine in termini pratici è particolarmente utile per evitare la degenerazione della ricerca in percorsi con tempo di arrivo troppo inoltrati nel futuro. 
+			\item {\bf SOB}	Size Of Bundle, indica la dimensione del bundle in byte ed è necessario per verificare che questa non ecceda la capacità di trasferimento rimanente del contatto e altri controlli dello stesso tipo. 
+		\end{itemize}
+		
+		Il dato che ci si aspetta in uscita è invece una struttura di tipo {\bf Percorso}, contenente tutti i contatti che dovrà sfruttare il bundle per arrivare a destinazione. Per ottenere questo risultato il flusso di elaborazione deve passare per diverse routine differenti, ma in questa sede verrà approfondita solamente la procedura centrale e di reale interesse, in forma sintetica. Le routine di contorno infatti sono fortemente dipendenti dall'implementazione e svolgono un ruolo di inizializzazione e finalizzazione delle strutture dati prima e dopo queste sono state elaborate dall'algoritmo centrale.
+		
+		Entrando nel dettaglio, l'algoritmo in questione può considerarsi un derivato della forma ricorsiva di una tipologia denominata {\bf DFS}, utilizzata per la ricerca nelle struttura ad albero o a grafo. {\bf DFS} è l'acronimo di {\it Depth-First Search}, cioè ricerca con priorità della profondità. 
+		% nella  ricerca in grafi infatti..
+		% questo tipo di rircarca si oppone alla ricerca in ampiezza blabla
+		% il nostro obbiettivo si può ricondurre infatti ad una ricarca in un grafo con lo scopo di trovare un HS e segnarsi tutti i passi fatti per arrivarci
+		%perchè la procedura funziona infatti partendo dal nodo destinazione
+		
+		
+			\begin{algorithm}
+				\SetStartEndCondition{ (}{)}{)}\SetAlgoBlockMarkers{}{\}}
+				\SetKwProg{Fn}{}{\{}{}\SetKwFunction{FRecurs}{void FnRecursive}
+				\SetKwFor{For}{for}{\{}{}
+				\SetKwIF{If}{ElseIf}{Else}{if}{\{}{else if}{else\{}{}
+				\SetKwFor{While}{while}{\{}{}
+				\SetKwRepeat{Repeat}{repeat\{}{until}
+				\AlgoDisplayBlockMarkers\SetAlgoNoLine
+				\newcommand{\forcond}{$i=0$ \KwTo $n$}
+				\SetKwFunction{FRecurs}{SCGR}
+				
+				\SetKwInput{sob}{SOB}
+				\SetKwInput{tov}{TOV}
+				\SetKwInput{percorso}{Percorso}
+				\SetKwInput{contatto}{Contatto}
+				\SetKwInput{percorsi}{TuttiPercorsi}
+				
+				\sob{Size Of Bundle, la dimensione in byte del Bundle.}
+				\tov{Time Of Validity, tempo massimo di consegna del Bundle a destinazione. Oltre questo limite i dati perdono significato.}
+				\percorso{Struttura dati che contiene una serie di contatti.}
+				\contatto{Contiene il tempo di inizio e l'indirizzo del nodo con cui si è in contatto.}
+				%\indirizzo{}
+				\percorsi{Contiene tutti i percorsi validi trovati.}
+				
+				\Fn{\FRecurs{{\bf Indirizzo} destinazione, {\bf Percorso} finoAQui, {\bf TOV}}}{
+					
+					\For{Per ogni contatto di questo nodo, da adesso fino al {\bf TOV}}
+					{
+						{\bf NuovoPercorso} = finoAQui;
+						
+						\If{Se il contatto è compatibile con le specifiche}
+						{
+							{\bf NuovoPercorso}.aggiungi({\it Questo conttato});
+							
+							\If{Se il nodo in contatto è un HotSpot}
+							{
+								{\bf TuttiPercorsi}.aggiungi(Nuovo{\bf Percorso});
+							}
+							\ElseIf{Se il nodo in contatto è un nanosatellite}
+							{
+								SCGR({\bf Indirizzo} di questo nodo, {\bf NuovoPercorso}, istante inizio questo contatto);
+							}
+						}
+					}
+				}
+			
+			\end{algorithm}
+		
 		
 	\section{Risultati simulazione e analisi delle prestazioni}
 		

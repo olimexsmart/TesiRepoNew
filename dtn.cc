@@ -443,7 +443,7 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(Ipv4Address destinationAddress, ui
 	 */
 	uint8_t* addr = new uint8_t[4];
 	destinationAddress.Serialize(addr);
-	uint8_t temp = addr[0] - 10 + nHotSpots + nNanosats - nColdSpots;
+	uint8_t temp = addr[0] - 10;
 	//Creating structures
 	//vector< vector<mypacket::BndlPath> > allPaths;
 	vector<mypacket::BndlPath> newPath;
@@ -468,68 +468,7 @@ vector<mypacket::BndlPath> DtnApp :: FindPath(Ipv4Address destinationAddress, ui
 	return newPath;
 }
 
-/*
-	The SCGR data structure is a vector of path vectors.
-	This function will recursively call itself filling the 
-	SCGR with all possible paths. Lastly the final decision on the 
-	path will be taken by a separate function.
- */
-void DtnApp :: SourceContactGraphRouting(vector< vector<mypacket::BndlPath> > &allPaths, Ipv4Address destAddress, uint32_t TOV, uint32_t SOB, vector<mypacket::BndlPath> untilHere){
-	//if(allPaths.size() > 5) return; //Avoid building enormous structures, as for now we take the first anyway.
 
-	//Routine here to find the entry in the contactTable starting from an IP address
-	uint32_t thisNode; //Holds the index of the contact table corresponding to the node considered in this call
-	for(thisNode = 0; thisNode < contactTable.size(); thisNode++)
-		if(contactTable[thisNode].this_node_address == destAddress)
-			break;
-
-	vector<mypacket::BndlPath> newPath;
-
-	//Now we need to select contacts between now and TOV of the current node
-	uint32_t tStart;
-	uint32_t tEnd;
-	uint32_t tnow = Simulator::Now ().GetMilliSeconds();
-	for(tStart = 0; (contactTable[thisNode].t_start[tStart] < tnow) && (tStart < contactTable[thisNode].t_start.size()); tStart ++);
-	for(tEnd = 0; (contactTable[thisNode].t_end[tEnd] < TOV) && (tEnd < contactTable[thisNode].t_end.size()); tEnd ++);
-
-	for(uint32_t k = tStart; k < tEnd; k++)
-	{
-		newPath = untilHere; //Reset the path at every hop selection, be sure this simply doesn't create a reference copy
-		if(CheckContact(contactTable[thisNode].volumeTraffic[k], SOB)) //Check if this contact is usable
-		{	/*
-		      There are two IP interfaces, we must refer only to the RX one.
-			  Hops between nanosats involve a TX IP (50.0.0.X) and a RX IP (10.0.0.X),
-			  We are reading the contact table as an RX IP because we are searching a path
-			  starting from the destination node. Because of this, the next hop address is a
-			  TX IP. That's not good because for the next call of SCGR or to save it in the
-			  path vector we need a RX IP. So here we are ADDRESSING ;) this issue.
-		 */
-			Ipv4Address nextHop = contactTable[thisNode].node_in_contact_with[k];
-			uint8_t* addr = new uint8_t[4];
-			nextHop.Serialize(addr);
-			if(addr[0] == 50) //If nanosat
-				addr[0] = 10;
-			else if(addr[0] == 10) //Else if not needed, but I don't care.
-				addr[0] = 50;	//If a HotSpot, we need to write down the wired interface, but it will be done in ChoosePath
-
-
-			uint32_t destAddress = addr[3] | addr[2]<<8 | addr[1]<<16 | addr[0]<<24;
-			nextHop = Ipv4Address(destAddress);
-
-			//Setting up the next hop structure to adding it at the end of the newPath
-			mypacket::BndlPath pathEntry = mypacket::BndlPath(contactTable[thisNode].t_start[k], nextHop);
-			newPath.insert(newPath.begin(), pathEntry);  //This should produce a vector beginning with an HS and ending with a CS
-
-			//This gets to recognize the type of node, if == 1 it's a hotspot, the path is completed and we need to save it
-			//If it's a two is a nanosatellite, recall this function
-			if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 1)
-				allPaths.push_back(newPath);
-			else if(GetNodeType(contactTable[thisNode].node_in_contact_with[k]) == 2 && allPaths.size() < 3)	//Avoid building enormous structures, as for now we take the first anyway.
-				SourceContactGraphRouting(allPaths, nextHop, contactTable[thisNode].t_start[k], SOB, newPath);
-		}
-	}
-	untilHere.clear();
-}
 
 /*
 	In the need of recognizing easily the type of node we are dealing with,
@@ -1039,9 +978,9 @@ int main (int argc, char *argv[])
 	cout << "Started\n";
 
 
-	nHotSpots = 16;
-	nNanosats = 24;
-	nColdSpots = 32;
+	nHotSpots = 8;
+	nNanosats = 42;
+	nColdSpots = 16;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
 	//nBundles = 1000;
@@ -1710,18 +1649,8 @@ int main (int argc, char *argv[])
 
 	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);
 	//Duration: 86400
-	for (uint32_t count = 1; count <= 1000; count++) {
+	for (uint32_t count = 1; count <= 1000; count += 1) {
 		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "23.0.0.2", 0);
-/*		Simulator::Schedule(Seconds (count * 20 + 10), &DtnApp::CreateBundleData, app[0], "22.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 5), &DtnApp::CreateBundleData, app[0], "37.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 7), &DtnApp::CreateBundleData, app[0], "26.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 9), &DtnApp::CreateBundleData, app[0], "15.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 12), &DtnApp::CreateBundleData, app[0], "29.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 14), &DtnApp::CreateBundleData, app[0], "36.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 17), &DtnApp::CreateBundleData, app[0], "17.0.0.2", count * 20000 + 36400000);
-//		Simulator::Schedule(Seconds (count + 2000), &DtnApp::CreateBundleData, app[0], "11.0.0.2", 35000000);
-		//Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "18.0.0.2", 50000000);
-*/
 	}
 
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
