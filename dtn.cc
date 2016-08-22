@@ -1649,8 +1649,15 @@ int main (int argc, char *argv[])
 
 	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);
 	//Duration: 86400
-	for (uint32_t count = 1; count <= 1000; count += 1) {
-		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "23.0.0.2", 0);
+	for (uint32_t count = 1; count <= 8000; count += 8) {
+		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "24.0.0.2", 0);
+		Simulator::Schedule(Seconds (count + 1), &DtnApp::CreateBundleData, app[0], "17.0.0.2", 0);
+		Simulator::Schedule(Seconds (count + 2), &DtnApp::CreateBundleData, app[0], "22.0.0.2", 0);
+		Simulator::Schedule(Seconds (count + 3), &DtnApp::CreateBundleData, app[0], "23.0.0.2", 0);
+		Simulator::Schedule(Seconds (count + 4), &DtnApp::CreateBundleData, app[0], "25.0.0.2", 0);
+		Simulator::Schedule(Seconds (count + 5), &DtnApp::CreateBundleData, app[0], "11.0.0.2", 0);
+		Simulator::Schedule(Seconds (count + 6), &DtnApp::CreateBundleData, app[0], "12.0.0.2", 0);
+		Simulator::Schedule(Seconds (count + 7), &DtnApp::CreateBundleData, app[0], "14.0.0.2", 0);
 	}
 
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
