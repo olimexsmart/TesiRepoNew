@@ -1001,7 +1001,7 @@ int main (int argc, char *argv[])
 
 
 	nHotSpots = 8;
-	nNanosats = 42;
+	nNanosats = 24;
 	nColdSpots = 16;
 	nOrbits = 4;
 	nRuralNodesForEachColdSpot = 2;
@@ -1671,18 +1671,23 @@ int main (int argc, char *argv[])
 
 	//Simulator::Schedule(Seconds (1), &DtnApp::CreateBundleData, app[0], "40.0.0.2", 15000000);	
 	//Duration: 86400
-	for (uint32_t count = 1; count <= 2500; count++) {
-		Simulator::Schedule(Seconds (count * 20), &DtnApp::CreateBundleData, app[0], "23.0.0.2", count * 20000 + 36400000);
-/*		Simulator::Schedule(Seconds (count * 20 + 10), &DtnApp::CreateBundleData, app[0], "22.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 5), &DtnApp::CreateBundleData, app[0], "37.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 7), &DtnApp::CreateBundleData, app[0], "26.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 9), &DtnApp::CreateBundleData, app[0], "15.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 12), &DtnApp::CreateBundleData, app[0], "29.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 14), &DtnApp::CreateBundleData, app[0], "36.0.0.2", count * 20000 + 36400000);
-		Simulator::Schedule(Seconds (count * 20 + 17), &DtnApp::CreateBundleData, app[0], "17.0.0.2", count * 20000 + 36400000);
-//		Simulator::Schedule(Seconds (count + 2000), &DtnApp::CreateBundleData, app[0], "11.0.0.2", 35000000);
-		//Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "18.0.0.2", 50000000);
-*/
+	for (uint32_t count = 1; count <= 16000; count += 16) {
+		Simulator::Schedule(Seconds (count), &DtnApp::CreateBundleData, app[0], "11.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 1), &DtnApp::CreateBundleData, app[0], "12.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 2), &DtnApp::CreateBundleData, app[0], "13.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 3), &DtnApp::CreateBundleData, app[0], "14.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 4), &DtnApp::CreateBundleData, app[0], "15.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 5), &DtnApp::CreateBundleData, app[0], "16.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 6), &DtnApp::CreateBundleData, app[0], "17.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 7), &DtnApp::CreateBundleData, app[0], "18.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 8), &DtnApp::CreateBundleData, app[0], "19.0.0.2", 70400000);		
+		Simulator::Schedule(Seconds (count + 9), &DtnApp::CreateBundleData, app[0], "20.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 10), &DtnApp::CreateBundleData, app[0], "21.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 11), &DtnApp::CreateBundleData, app[0], "22.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 12), &DtnApp::CreateBundleData, app[0], "23.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 13), &DtnApp::CreateBundleData, app[0], "24.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 14), &DtnApp::CreateBundleData, app[0], "25.0.0.2", 70400000);
+		Simulator::Schedule(Seconds (count + 15), &DtnApp::CreateBundleData, app[0], "26.0.0.2", 70400000);
 	}
 	
 	NodeContainer allIPNodes = NodeContainer(NodeContainer(centralNode, centralBackgroundNode), hotSpotNodesContainer, backgroundNodesContainer, nanosatelliteNodesContainer, coldSpotNodesContainer);
