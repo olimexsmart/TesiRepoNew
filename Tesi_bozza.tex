@@ -1,7 +1,7 @@
 \documentclass[12pt,a4paper,oneside]{book}
 \linespread{1.5}
 \usepackage{graphicx}
-\usepackage{caption}
+\usepackage[hang,small,bf]{caption}
 \usepackage{subcaption}
 \usepackage{wrapfig}
 \usepackage[utf8]{inputenc}
@@ -10,7 +10,13 @@
 \usepackage{fancyhdr}
 \usepackage[linesnumbered,lined,boxed,commentsnumbered]{algorithm2e}
 \usepackage{bytefield}
+\usepackage{epstopdf}
+\usepackage[italian]{babel}
 
+\author{Luca Olivieri}
+\title{Source Contact Graph Routing applicato ad una rete DTN nanosatellitare}
+
+\bibliographystyle{IEEEtran}
 
 \pagestyle{fancy}
 \addtolength{\headwidth}{\marginparsep}
@@ -22,16 +28,11 @@
 \fancyfoot{}
 \fancyfoot[L]{Università degli Studi di Genova}
 \fancyfoot[R]{\thepage}
-
-
 \renewcommand{\captionfont}{\slshape}
 
 \begin{document}
 	
-	\centerline{\sc Bozza Tesi}
-	\centerline{\sc \large Routing di sorgente in reti DTN deterministiche}
-	\centerline{\sc Luca Olivieri}
-	\vspace{2pc}
+	\input{copertina}
 	
 	\clearpage
 	
@@ -487,9 +488,48 @@
 	\chapter{Risultati simulazione e analisi delle prestazioni}
 		
 		\section{Simulatore}
-		%ns3 descrizione
+		Per investigare il comportamento della rete si è scelto il simulatore di rete ns-3. 
+		ns-3 è un simulatore ad eventi discreti, vale a dire che il sistema è rappresentato, nella sua evoluzione nel tempo, con variabili che cambiano istantaneamente il loro valore in ben definiti istanti di tempo. L'avanzamento di quest'ultimo salta da un evento ad un altro, ignorando i periodi di inattività. \'E un potente strumento analizzare la progettazione di protocolli e interazioni tra gli stessi. Rappresenta una grande opportunità per la ricerca permettendo di studiare il comportamento di reti reali dai costi proibitivi o non immediatamente realizzabili, come ad esempio la nostra rete DTN. Altre ragioni per usare ns-3 sono la possibilità di avere un comportamento riproducibile e sfruttare i modelli di rete disponibili per impararne il funzionamento. Nato dalle ceneri di ns-2, si è posto dal principio lo scopo generale di essere {\it open-source}, estensibile e mirato alla ricerca e all'insegnamento.  Esistono molti simulatori di rete alternativi, esporremo qui alcune caratteristiche che distinguono ns-3 dagli altri strumenti.
+		
+		\begin{itemize}
+			\item ns-3 è progettato come un{\bf set di librerie} che possono essere combinate tra loro e con altre librerie esterne. Mentre altre piattaforme forniscono una singola interfaccia utente usata per portare avanti ogni tipo di lavoro, ns-3 permette di poter usare diversi strumenti di visualizzazione e analisi di dati esterni
+			
+			\item Anche se principalmente usato su piattaforme Linux, esiste il supporto per FreeDSB e Cygwin per macchine Windows. Supporto nativo per Visual Studio è stato rilasciato in forma sperimentale. 
+		\end{itemize}
+		
+		Lo sviluppo del simulatore è diviso in gruppi differenti, ma le linee guida seguenti sono valide in generale con lo scopo di produrre uno strumento di successo.
+		\begin{itemize}
+			\item {\bf Compatibilità}, essendo il codice basato largamente su simulatori esistenti, come ns-2, GTNetS e altri
+			\item {\bf Scalabilità}, mentre ns-2 era un simulatore sequenziale con una singola esecuzione su un singolo processore, ns-3 può essere utilizzato per simulazioni distribuite e parallele. 
+		\end{itemize}
 
+		Infine un riassunto delle linee guida su cui il team di progetto si fa strada.
+		
+		\begin{itemize}
+			\item {\bf Orientato agli oggetti.} Un simulatore di rete con lo scopo di essere usato dalla comunità di ricerca deve essere facilmente estensibile per includere nuovi protocolli, modifiche degli attuali esistenti o nuovi tipi di instradamento. Per questo gli sviluppatori hanno deciso di portare avanti la scelta già intrapresa con ns-2 di creare una gerarchia di classi C++.
+			
+			\item {\bf Realismo.} Il progetto del simulatore deve permettere di avvicinarsi molto al comportamento di reti reali. Ad esempio oggetti rappresentati gli applicativi dovrebbero interagire con i protocolli di livello quattro in modo simile a quelli reali.
+			
+			\item {\bf Efficienza di memoria.} Il simulatore supporta sia flussi {\it data-less} che flussi {\it data-full}. In altre parole è possibile risparmiare memoria essendo che molto spesso i dati trasportati non hanno significato nel contesto di simulazione e possono essere astratti via.
+			
+			\item {\bf Output configurabile.} Anche per andare incontro ad esigenze di simulazioni di grande portata, i dati da raccogliere sono altamente configurabili a seconda delle esigenze.
+			
+			\item {\bf Statistiche.} Il simulatore include strumenti per creare grafici ed estrapolare dati, in modo da aiutare la caratterizzazione dei risultati di simulazione.
+		\end{itemize}
+		
 		\section{Simulazione della rete}
+		Lo scopo quindi è quello di modellare la nostra rete sul simulatore, cercando di evitare il più possibile discrepanze con la teoria esposta. Purtroppo però per alcune limitazioni operative di ns-3 per quanto riguarda le comunicazioni satellitare e le reti DTN, si è dovuti andare incontro ad alcune approssimazioni per non pesare troppo sulla semplicità e sui tempi di sviluppo. L'elenco seguente raccoglie tutte caratteristiche progettuali adottate per ricostruire la nostra architettura di rete sul simulatore. 
+		
+		\begin{itemize}
+			\item I collegamenti tra HotSpot e Nodo Centrale e anche i collegamenti tra ColdSpot e nodi rurali sono implementati tramite i moduli Ethernet e TCP/IP di ns-3.
+			
+			\item Siccome che i collegamenti satellitari e relativi protocolli specializzati (LTP) non sono ancora stati implementati in ns-3, il collegamento radio è stato approssimato con una rete WiFi. Definendo le interfacce dei nanosatelliti e delle basi di terra con impostazioni particolari è possibile permettere la trasmissione di bundle su distanze molto maggiori delle normali reti WiFi. Il livello di rete invece è un normale IP. Per quanto riguarda il livello di trasporto invece si è sopperiti alla mancanza del Licklider Transmission Protocol (LTP) con il modulo UDP. Per emulare il meccanismo di ritrasmissione LTP, mancante per natura nell'UDP, lo si è implementato a livello applicativo nel bundle DTN. L'accoppiata quindi di UDP e ACK fornito dal Bundle Layer si comporta similmente all'LTP, dove il mittente mantiene una copia dei bundle inviati fintanto che non riceve una risposta positiva dal destinatario di avvenuta ricezione. 
+			
+			\item Per creare una comunicazione radio bidirezionale è stato necessario definire due interfacce radio per ogni nodo wireless, una in {\it Downlink} e una in {\it Uplink}. Questo sebbene ns-3 contenesse un modulo CSMA full-duplex, essendo che si aveva bisogno di un WiFi full-duplex. La soluzione quindi è stata di dotare i nodi con due distinte interfacce Wifi dalle stesse caratteristiche fisiche. Ad esempio un HotSpot mandando un dato ad un nanosatellite userà l'interfaccia di {\it Uplink}, questo riceverà i dati tramite l'interfaccia di {\it Uplink} ma risponderà tramite l'interfaccia di {\it Downlink}. Infine l'HotSpot riceverà la risposta tramite l'interfaccia di {\it Downlink}.
+			
+			
+			
+		\end{itemize}
 		%i compromessi e adattamenti della rete al simulatore
 			
 		\section{Scenari di simulazione}
@@ -504,7 +544,7 @@
 	%gestione delle scelte di routing in modo dinamico
 	
 	
-	\bibliographystyle{ieeetr}
+	
 	\bibliography{references}
 	
 \end{document}
