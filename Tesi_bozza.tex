@@ -1,29 +1,46 @@
-\documentclass[a4paper]{article}
+\documentclass[12pt,a4paper,oneside]{book}
+\linespread{1.5}
 \usepackage{graphicx}
-\usepackage{caption}
+\usepackage[hang,small,bf]{caption}
 \usepackage{subcaption}
 \usepackage{wrapfig}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath}
+\usepackage{fancyhdr}
 \usepackage[linesnumbered,lined,boxed,commentsnumbered]{algorithm2e}
 \usepackage{bytefield}
+\usepackage{epstopdf}
+\usepackage[italian]{babel}
 
+\author{Luca Olivieri}
+\title{Source Contact Graph Routing applicato ad una rete DTN nanosatellitare}
+
+\bibliographystyle{IEEEtran}
+
+\pagestyle{fancy}
+\addtolength{\headwidth}{\marginparsep}
+\addtolength{\headwidth}{\marginparwidth}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\footrulewidth}{0.6pt}
+\renewcommand{\chaptermark}[1]{\markboth{ }{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\fancyfoot{}
+\fancyfoot[L]{Università degli Studi di Genova}
+\fancyfoot[R]{\thepage}
+\renewcommand{\captionfont}{\slshape}
 
 \begin{document}
 	
-	\centerline{\sc Bozza Tesi}
-	\centerline{\sc \large Routing di sorgente in reti DTN deterministiche}
-	\centerline{\sc Luca Olivieri}
-	\vspace{2pc}
+	\input{copertina}
 	
 	\clearpage
 	
-	\section*{Ringraziamenti}	
+	\chapter*{Ringraziamenti}	
 	
 	\clearpage
 	
-	\section*{Estratto}
+	\chapter*{Estratto}
 	
 	\clearpage
 	
@@ -31,19 +48,19 @@
 	
 	\clearpage
 	
-	\section{Introduzione}
+	\chapter{Introduzione}
 	
 	\clearpage
 	
-	\section{Delay Tolerant Networks}
+	\chapter{Delay Tolerant Networks}
 		
-		\subsection{Origini e idea generale}
+		\section{Origini e idea generale}
 		
 		Le reti convenzionali mal si adattano in condizioni ambientali estreme e in recenti anni questo problema è stato oggetto di ricerca. I principali limiti dei dispositivi operanti in queste circostanze riguardano la capacità di rete limitata, la scarsa disponibilità di energia e memoria, il movimento e in particolare lunghi ritardi e connettività intermittente. Queste ultime limitazioni saranno la caratteristica principale di questo lavoro, incentrato su reti di tipo satellitare dove il costante movimento orbitale impone una connettività intermittente e la notevole distanza tra i nodi risente del limite di propagazione della luce. La comune pila ISO/OSI male si adatta a queste condizioni, soffrendo a più livelli delle peculiari caratteristiche della rete. In particolare la combinazione TCP/IP è resa inutilizzabile da questi impedimenti e questo argomento verrà approfondito nel prossimo capitolo. Varie soluzioni sono state proposte per affrontare questo problema, tra cui i Performance Enhancing Proxies (PEPs) che però, oltre a non rappresentare una vera soluzione, creano problemi di incompatibilità con gli attuali protocolli di sicurezza.
 		
 		Una valida soluzione alternativa è l'architettura DTN, che introduce un protocollo, chiamato Bundle Protocol (BP), sovrastante il livello di trasporto (TCP, UDP, etc..) o il livello fisico (Bluetooth, Ethernet, ...). Questa aggiunta permette la memorizzazione su lunghi periodi ai nodi intermedi, permettendo così di poter affrontare interruzioni del canale e lunghi ritardi. Dividendo il percorso end-to-end in più salti di tipo DTN si estende il concetto di TCP-splitting già utilizzato sui PEP, permettendo di usare protocolli specializzati necessari, ad esempio, sui link satellitari.
 		
-		\subsection{Limitazioni dei protocolli convenzionali in condizioni estreme}
+		\section{Limitazioni dei protocolli convenzionali in condizioni estreme}
 		
 		Per meglio comprendere le limitazioni che i protocolli standard di Internet hanno in condizioni di rete precarie verrà proposto un esempio. Consideriamo uno scenario composto da un centro di ricerca, un complesso di antenne e un satellite in orbita marziana. La situazione è schematizzata nella figura (ref to im). 
 		
@@ -68,7 +85,7 @@
 		Infine l'ultimo impedimento è la connessione intermittente che dai normali sistemi di routing è elaborata come una totale disconnessione eccedendo i tempi di timeout standard. Il nodo è quindi considerato strutturalmente perso piuttosto che in una disconnessione pianificata e di conseguenza un tipico calcolo di percorso basato su IP non è possibile.
 		
 		
-		\subsection{Architettura DTN}		
+		\section{Architettura DTN}		
 		
 		L'archittettura DTN è basata sull'introduzione di un nuovo strato protocollare a livello di trasporto o anche a livelli più bassi chiamato Bundle Protocol (BP). Il punto essenziale è dotare i nodi della capacità di gestire ritardi e disconnessioni, permettendo di memorizzare i dati localmente in attesa dell'opportunità per inoltrarli al prossimo nodo. 
 		
@@ -102,7 +119,7 @@
 		\end{itemize}
 		
 		
-		\subsection{DTN come evoluzione del TCP splitting}
+		\section{DTN come evoluzione del TCP splitting}
 		L'accesso a internet tramite TCP/IP ha portato allo sviluppo dei PEP e in generale di {\it protocol boosters } per adattare questo stack in reti eterogenee. Il loro ruolo modifica attivamente il flusso sorgente-destinazione per adattare ai nodi TCP/IP i tratti con prestazioni povere, di fatto inducendoli a credere di avere a che fare con connessioni a prestazioni migliori. Gli esempi proposti saranno incentrati sulla comunicazione satellitare, essendo questa uno scenario di tipico utilizzo dei PEP. Il link satellitare infatti presenta forti latenze e altre peculiarità che rendono necessari protocolli specializzati come LTP. I PEP o alternativamente le DTN si occupano di spezzare la connessione a livello di trasporto (TCP) per permettere la sostituzione di quest'ultimo con LTP, ad esempio. 
 		%non ho capito un accidente dei principi di fate sharing
 		
@@ -123,16 +140,16 @@
 		
 		
 	
-	\section{Nanosatellite DTN Network}
+	\chapter{Nanosatellite DTN Network}
 		
-		\subsection{Framework}	
+		\section{Framework}	
 
 		L'idea generale su cui si basa questo lavoro è una costellazione di nanosatelliti operanti con il paradigma DTN, inizialmente sviluppata in uno scenario dove diverse orbite non interagivano \cite{cello2014hot}, limitata quindi allo stesso piano orbitale, si è evoluta poi in uno scenario tridimensionale. Il satellite diventa un contenitore di dati che con il suo movimento li trasporta fino a destinazione. In questo scenario sono possibili scambi di dati tra satelliti in orbita, ma non sono possibili contatti tra più di due satelliti. Il costo decisamente più contenuto dell'infrastruttura è la motivazione principale di una rete satellitare di questo genere, proposta come alternativa alle soluzioni commercialmente disponibili. Nei prossimi paragrafi verranno approfonditi aspetti tecnici come le diverse tipologie di satellite, orbita e infrastruttura. Infine sarà a approfondito l'uso di questa piattaforma per l'estensione della rete Internet a zone rurali.
 		
-		\subsection{Orbite e piattaforma satellitare}
+		\section{Orbite e piattaforma satellitare}
 		Per meglio comprendere la configurazione della nostra costellazione seguirà un breve approfondimento sulle differenti tipologie di orbita e satellite. Infine sarà esposta e motivata la nostra scelta.
 
-			\subsubsection{Classificazione delle orbite}
+			\subsection{Classificazione delle orbite}
 			La meccanica orbitale di corpi naturali e artificiali è governata dalle tre leggi di Keplero. Comprendendo queste regole è possibile giustificare le caratteristiche dei differenti tipi di orbita usati per i satelliti artificiali. Le leggi sono valide nel caso la massa del corpo orbitante è trascurabile rispetto al corpo centrale e si possono trascurare le interazioni con corpi diversi oltre i due in esame. Queste approssimazioni sono valide nel nostro caso di studio e le leggi sono riformulate dal punto di vista di un satellite artificiale in orbita terrestre.
 			\begin{enumerate}
 				\item L'orbita di un satellite è un'ellisse con la Terra in uno dei due fuochi.
@@ -186,7 +203,7 @@
 			\end{itemize}
 			
 						
-			\subsubsection{Satelliti artificiali}
+			\subsection{Satelliti artificiali}
 			Per meglio comprendere il ruolo dei satelliti artificiali nella nostro contesto, verrà riportata una breve introduzione storica e tecnica sull'argomento. Ipotesi di un satellite posto in orbita dall'uomo sono state fatte a cominciare dall'inizio del ventesimo secolo, con congetture avveniristiche che potevano essere considerate deliranti all'epoca ma del tutto quotidiane nei tempi attuali. Konstantin Tsiolkovsky (1857–1935) nel 1903 pubblicò il primo trattato accademico sull'argomento, introducendo i concetti base di un razzo multistadio e calcolò i parametri base dell'orbita geostazionaria. Nel 1928 Herman Potočnik (1892–1929) espose l'idea di una stazione spaziale che permettesse la permanenza umana in orbita, motivando contesti applicativi di ricerca e militari. Introdusse inoltre l'idea di un satellite radio in orbita geostazionaria, ma l'intuizione finale di utilizzare questa posizione privilegiata per un ponte radio e comunicazione di massa va attribuita a Arthur C. Clarke (1917–2008) nel 1945. Il primo satellite artificiale è stato lo Sputnik, lanciato nel 1957, segnando l'inizio di un irrefrenabile sviluppo tecnologico del campo che ha portato a diverse e numerose applicazioni, anche del tutto differenti dall'ambito delle telecomunicazioni. In seguito un elenco degli attuali principali utilizzi.
 			\begin{itemize}
 				\item {\bf Ricerca}
@@ -238,7 +255,7 @@
 			
 			
 		
-		\subsection{Architettura di rete}	
+		\section{Architettura di rete}	
 		
 		La rete proposta è un complesso costituito da un gruppo eterogeneo di nodi DTN, ciascuno avente un preciso ruolo e posizione nello scambio di dati. Questa rete è un'evoluzione diretta di quella proposta in (Inserire reference al papiro). Lo scheletro è composto da una costellazione di nanosatelliti con caratteristiche descritte nel capitolo precedente, corredato da due tipologie di stazioni terrestri adibite alla comunicazione satellitare. 
 		
@@ -273,17 +290,17 @@
 		Da questo esempio di comunicazione bidirezionale si può dedurre che i nodi applicanti il paradigma DTN sono gli HotSpots, i Nanosatelliti e i ColdSpots. Questi spezzano le connessioni a livello di trasporto nella logica di evoluzione del TCP splitting esposta nel capitolo 2.4 e attuano la memorizzazione dei dati esposta nel capitolo 2.3. Il Central Node è un nodo capace di lavorare al livello del Bundle Protocol, gli altri nodi della rete, come ad esempio i nodi Internet che collegano gli HS al CN, ignorano il BP assimilandolo ad un livello applicativo. 
 	
 		
-		\subsection{Connessioni alla Rete in aree rurali}
+		\section{Connessioni alla Rete in aree rurali}
 			
 		L'accessibilità della conoscenza è diventata una delle pietre miliari del nostro tempo, uno dei simboli più marcati del progresso portato dall'evoluzione impetuosa del settore delle Comunicazioni e delle Tecnologie dell'Informazione (ICT). Questo progresso però si è affermato principalmente nelle aree più sviluppate, andando inoltre a migliorare enormemente le infrastrutture burocratiche e organizzative. Il grande freno nell'affermazione di tali tecnologie in zone più disagiate o rurali è il costo dell'infrastruttura di supporto, che richiederebbe creare da zero una rete in zone dalle condizioni naturali estremamente avverse o dalla situazione politica incerta e disinteressata. Inoltre la scarsa densità abitativa di tali aree non potrebbe giustificare a maggior ragione il dispiegamento di una rete ad alta capacità. Esclusi luoghi dalle condizioni naturali estreme, come latitudini polari o atolli oceanici, le restanti zone rurali potrebbero essere caratterizzate inoltre da problemi di emergenza umanitaria ben più gravi della mancanza dell'infrastruttura ICT, ma se posta in questi termini il divario con la civiltà urbana occidentalizzata non potrebbe che aumentare. Nel prossimo capitolo saranno esposti alcuni approcci sviluppati per creare un'alternativa alla rete convenzionale che noi conosciamo nella nostra quotidianità.
 			
-				\subsubsection{Motivazione dell'approccio nanosatellitare}			
+				\subsection{Motivazione dell'approccio nanosatellitare}			
 					
 				Questa ricerca punta alla creazione di una rete globale e indipendente, i cui principali vantaggi sono in primo luogo il basso costo, sempre in paragone con le alternative esistenti che propongono servizi comparabili esposti precedentemente, la scalabilità, essendo che è possibile un dispiegamento graduale delle risorse, aggiungendo man mano che i fondi diventano disponibili nuovi nanosatelliti, HotSpots e zone rurali. Da questo punto si ottiene un'importante altra conseguenza, la robustezza della rete. La perdita di uno o più nodi non costituisce una criticità per il funzionamento complessivo. 
 					
 				Altri vantaggi nell'usare una rete satellitare derivano dalla totale indipendenza dalle condizioni e vicissitudini superficiali, quindi la rete è immune a disastri naturali e difficilmente soggetta a sabotaggi e censure politiche.
 					
-			\subsubsection{Altri approcci al problema}
+			\subsection{Altri approcci al problema}
 			
 			\begin{itemize}
 				\item {\bf Digital Gangetic Plains \cite{raman2007experiences}}
@@ -302,7 +319,7 @@
 			
 			Il limite primo di tutte queste proposte è l'affrontare il problema con un approccio locale, sempre a rischio di fattori ambientali e politici instabili. L'alternativa proposta da questo lavoro di ricerca è chiamata "Ring Road" \cite{burleigh2011toward} e non è altro che l'infrastruttura esposta ad inizio capitolo.
 		
-		\subsubsection{Alternative commerciali}
+		\subsection{Alternative commerciali}
 		Mentenere una copertura Internet globale non è semplice:
 		\begin{itemize}
 			\item Con una costellazione in GEO è possibile mantenere una connessione persistente con un puntamento fisso, inoltre la costellazione può essere composta da un numero minore di satelliti rispetto a quelli necessari in orbita LEO, con l'altitudine maggiore come motivazione diretta di questo fatto.
@@ -328,7 +345,7 @@
 		
 		Riassumendo quindi l'uso di nanosatelliti permetterebbe di evitare tutti gli svantaggi di una rete terrestre pur essendo più economica di una rete satellitare GEO o LEO. 
 		
-		\subsubsection{La nostra costellazione}
+		\subsection{La nostra costellazione}
 		La costellazione di satelliti scelta per questo lavoro è in orbita LEO, che a confronto con un'orbita GEO offre il vantaggio di investimenti iniziali e latenze minori, ma ha il principale svantaggio che i satelliti sono in costante movimento rispetto alla superficie e quindi l'apparato di terra deve essere in grado di orientare l'antenna per rimanere agganciato al segnale. Come detto in precedenza, questa configurazione non permette, in termini di qualità del segnale, prestazioni ottimali in generale o comunque per tutta la durata del contatto. Inoltre un singolo satellite in orbita GEO costituisce un punto di criticità in caso di malfunzionamento rispetto ad una costellazione sparsa in orbita LEO. Questi compromessi però sono tutti a vantaggio del requisito principale di questo lavoro, ridurre i costi d'investimento per la creazione di una rete DTN in grado di estendere la copertura Internet a zone rurali. Una costellazione in orbita GEO rimane preferita in ambito di telecomunicazioni, ma comporta costi estremamente elevati. Sempre in quest'ottica è stata fatta la scelta del tipo di satellite, il nanosatellite.
 		
 		I nanosatelliti sono una realtà piuttosto recente, spesso utilizzati come piattaforme di test per nuove tecnologie o come piattaforma orbitale congiunta di università per esperimenti o dimostrazioni. Le loro peculiarità sono le dimensioni estremamente ridotte e standardizzate, nell'ordine delle decine di centimetri per lato, e il basso costo di progettazione, produzione e mantenimento. Eliminando completamente caratteristiche come un propulsore, pannelli solari orientabili, antenne ad alto guadagno, sistemi ridondanti, ecc... si possono ridurre notevolmente dimensioni e costi. In particolare i costi di messa in orbita sono notevolmente abbattuti in quanto possono essere aggregati ad altri lanci come carichi secondari. Infine alcuni sono lanciati insieme al rifornimento periodico alla Stazione Spaziale Internazionale (ISS) e da essa catapultati in orbita tramite un apposito lanciatore. 
@@ -343,16 +360,16 @@
 			
 		
 		
-	\section{Source Contact Graph Routing}
+	\chapter{Source Contact Graph Routing}
 	
-		\subsection{Introduzione}
+		\section{Introduzione}
 		Per instradamento, in inglese {\it routing}, si intende il percorso con cui i dati vengono trasferiti tra sorgente e destinazione. Relativamente a questo lavoro la questione è stata rimandata ad un capitolo separato perché rappresenta il punto centrale della tesi, posta nel contesto di ricerca più ampio introdotto in precedenza. 
 		
 		Verranno in seguito esposte le nozioni necessarie per comprendere il concetto Source Contact Graph Routing (SCGR), traducibile come instradamento a sorgente su grafo di contatti. SCGR è un'estensione del concetto di CGR proposto da Burleigh et al. \cite{burleigh2010contact}, che trae vantaggio dal fatto che le missioni spaziali sono minuziosamente pianificate e quindi i vari nodi possono essere a conoscenza di un futuro stato della rete. Non si rende necessario un dialogo tra nodi prima di confermare il prossimo salto, ma piuttosto la conoscenza dello stato della rete permette di creare un grafo di contatti, inteso come un modello variante nel tempo di connettività tra nodi, sul quale è possibile applicare l'algoritmo euristico proposto per trovare il miglior percorso. Con algoritmo euristico si intende essere capace di trovare una soluzione prossima all'ottimale, un compromesso necessario per limitare i tempi di calcolo necessari per una soluzione ottima. Sviluppata dalla NASA, questa idea permette maggiore flessibilità e resilienza della rete spaziale, permettendo di semplificare e ridurre i costi di gestione della missione.
 		
 		L'iniziale soluzione applicata alla rete DTN nanosatellitare per l'instradamento seguiva la logica CGR, dove ogni nodo conteneva le informazioni di contatto della rete e decideva ogni hop successivo durante le opportunità di contatto. L'alternativa proposta da questo lavoro invece sposta la decisione dell'intero percorso del bundle nel momento in cui questo viene generato. Il principale vantaggio consiste che all'origine si può ancora avere una visione d'insieme completa, non essendo condizionati nelle scelte di instradamento precedenti. Da qui l'aggiunta di "Source" a CGR, essendo un instradamento deciso a livello di sorgente. 
 		
-		\subsection{Predizione dei contatti e Contact Table}
+		\section{Predizione dei contatti e Contact Table}
 		%Spiegazione contact table e la sua logica di compilazione
 		Predire la posizione di un corpo in orbita è molto complesso a causa delle perturbazioni orbitali. Tra queste ricordiamo la non-sfericità terrestre, attrito atmosferico, campo gravitazionale irregolare, vento solare, l'attrazione di altri corpi celesti come Luna e Sole, una non perfetta modellazione della spinta del motore \cite{gilmore2009predicting}. Esistono diversi algoritmi, di diversa complessità, come ad esempio SPG4 proposto in \cite{gilmore2009predicting} che permette un'accuratezza di circa 1km, tenendo a mente che la soluzione diverge più si spinge la predizione nel futuro. Bisogna però considerare come queste informazioni vengono usate, nell'interesse di questa ricerca infatti non è necessario soffermarsi sulla precisione assoluta della posizione del satellite, ma piuttosto è di importanza il movimento in relazione al resto della costellazione. Certo, in un contesto applicativo pratico ci sarebbe bisogno di migliorare la precisione di queste informazioni, ma in questo caso verrebbero anche usate tecniche aggiuntive, come ad esempio il tracciamento da una stazione di terra, per migliorare i risultati delle simulazioni. Nel contesto di simulare una rete reale e di avere quindi la necessità di conoscere un generico comportamento della costellazione dal punto di vista dei contatti possibili tra nanosatelliti in orbita e tra nanosatelliti e stazioni di terra, sono state ignorate le perturbazioni orbitali sopramenzionate e si è scelto di fare riferimento ad un modello semplicistico della costellazione con orbite circolari. 
 		
@@ -369,7 +386,9 @@
 		
 		
 		
-		\subsection{Routing su una rete deterministica}
+
+		\section{Concetti di una rete deterministica}
+
 		%%vantaggi di una rete deterministica in termini di gestione e ottimizzazione
 		La Contact Table rappresenta la conseguenza diretta di una rete deterministica come la nostra, dove per ogni istante del tempo di simulazione è definita la topologia della rete e sulla quale possono essere fatte scelte decisionali a priori. Questa peculiarità permette di poter avere una visione di insieme dello stato e di tenere traccia delle conseguenze delle scelte fatte in tempo reale. In altre parole è possibile aggiornare la conoscenza futura dello stato della rete in funzione delle decisioni prese allo stato attuale. Un esempio pratico di questo concetto è stato introdotto dal presente lavoro di Tesi, offrendo interessanti possibilità di sviluppo oltre all'utilizzo implementato in questa sede. 
 		Immaginando i contatti come punti noti nel tempo e si pensi di allegare a questi una serie di informazioni riguardanti i nodi coinvolti. Un esempio di informazione in particolare, unica implementata e testata al momento, è la quantità di dati trasferibile tra i due nodi nel contatto. Questo dato è di fondamentale importanza nella pianificazione dell'instradamento perché costituisce un limite fisico della rete, non tenere conto di questa limitazione porterebbe inevitabilmente ad un conflitto tra quanto pianificato e quanto realmente succede. 
@@ -385,7 +404,9 @@
 		
 		% Diagramma con i due flussi che mostra i nodi coinvolti 
 		
-		\subsection{Algoritmo di instradamento}
+
+		\section{Algoritmo di instradamento}
+		
 		Come ultimo tassello per completare il percorso logico è necessario introdurre il procedimento computazionale per calcolare il percorso alla sorgente. Innanzitutto è necessario esporre gli ingressi e le uscite dell'algoritmo, comprese le strutture dati e le funzioni di supporto. I dati su cui si basa l'instradamento sono contenuti nella Contact Table, quest'ultima però riordinata dal punto di vista del singolo nodo, quindi per ogni nodo si ha l'intera pletora di contatti previsti ordinati cronologicamente. L'unità base di tutta la struttura dati è il {\bf Contatto}, che contiene tutte le informazioni che lo riguardano. La serie di salti che dovrà compiere il bundle invece è contenuta in una struttura di tipo {\bf Percorso}, che è costituita da una serie di {\bf Contatti} ordinati cronologicamente. 
 		
 		I dati necessari da fornire in ingresso all'algoritmo sono i seguenti:
@@ -462,28 +483,68 @@
 		Alla prima iterazione il parametro destinazione contiene l'indirizzo del ColdSpot, mentre il {\bf Percorso} {\it finoAQui} è vuoto, essendo appena partiti. Quest'ultima struttura tiene traccia del percorso fatto durante le varie iterazioni, agendo come una sorta di {\bf stack}, permettendo di aggiungere e rimuovere solo dal fondo i contatti ({\it riga 1}). 
 		
 		Il corpo è di fatto un {\bf for} ({\it riga 2}) che ad ogni ciclo prende in esame un contatto diverso del nodo indicato come destinazione, in ordine temporale. I limiti sono quelli esposti in precedenza: contatti da questo istante fino al {\bf TOV}. Quindi una nuova struttura viene inizializzata({\it riga 3}), {\bf NuovoPercorso}, usata per tenere traccia del contatto aggiunto in questo ciclo del {\bf for}. Il suo contenuto sarà il percorso fatto fino ad adesso con in fondo uno dei contatti del nodo a cui ci riferiamo come destinazione in questa chiamata della funzione. Come detto nel paragrafo precedente queste strutture di {\bf Percorso} sono gestite come degli {\it stack}, dove se un contatto viene aggiunto in fondo durante il resto del ciclo, viene poi rimosso nuovamente in questa riga di codice nel ciclo successivo, preparando la struttura a considerare il prossimo contatto nella schiera spazzata dal {\bf for}. Tutto questo però se il contatto preso in esame viene considerato valido dalla verifica {\bf if} successiva ({\it riga 4}), che rappresenta un bivio decisionale cruciale per il risultato dell'elaborazione. Questa verifica considera la compatibilità del contatto con le caratteristiche del bundle, come ad esempio la sua dimensione ({\bf SOB}), e mette in pratica le politiche di instradamento scelte. L'esempio più banale di questa verifica è quindi verificare che la capacità trasmissiva rimasta nel contatto sia compatibile con la dimensione del bundle, che è l'implementazione di questo lavoro. Logiche più complesse saranno poi proposte nel capitolo finale dedicato agli sviluppi futuri, con particolare attenzione alla congestione dei nodi. Se un contatto non è considerato valido si passa semplicemente al successivo, altrimenti si aggiunge al {\bf NuovoPercorso} che si sta creando ({\it riga 5}). A questo punto rimane da capire se con questo contatto appena aggiunto si è arrivati a trovare un percorso valido o c'è il bisogno di ripetere il processo iterativamente. Il flusso si biforca quindi al blocco {\bf if - else} di {\it riga 6} che aggiunge il {\bf Nuovo percorso} all'insieme di {\bf TuttiPercorsi} validi nel caso il contatto sotto esame sia un HotSpot, altrimenti ({\bf else}) ({\it riga 10}), richiama ricorsivamente questa funzione. Particolare attenzione va dedicata a quali parametri riceve la chiamata ricorsiva. L'indirizzo che viene passato è quello dell'altro nodo con cui si è in contatto, perché ci si è idealmente spostati di nodo nell'albero, e questo diventa nodo radice del sotto albero e quindi la nuova destinazione. La strada invece dalla nuova radice dell'albero alla radice originale (il ColdSpot) è contenuta nel {\bf NuovoPercorso}, che diventa il {\it finoAQui} della nuova chiamata ricorsiva. Infine il nuovo {\bf TOV} deve essere per forza essere l'istante di inizio del contatto che collega i due nodi, in modo che i dati riescano ad arrivare in tempo. 
-		
-	\section{Risultati simulazione e analisi delle prestazioni}
-		
-		\subsection{Simulatore}
-		%ns3 descrizione
 
-		\subsection{Simulazione della rete}
+		
+	\chapter{Risultati simulazione e analisi delle prestazioni}
+		
+		\section{Simulatore}
+		Per investigare il comportamento della rete si è scelto il simulatore di rete ns-3. 
+		ns-3 è un simulatore ad eventi discreti, vale a dire che il sistema è rappresentato, nella sua evoluzione nel tempo, con variabili che cambiano istantaneamente il loro valore in ben definiti istanti di tempo. L'avanzamento di quest'ultimo salta da un evento ad un altro, ignorando i periodi di inattività. \'E un potente strumento analizzare la progettazione di protocolli e interazioni tra gli stessi. Rappresenta una grande opportunità per la ricerca permettendo di studiare il comportamento di reti reali dai costi proibitivi o non immediatamente realizzabili, come ad esempio la nostra rete DTN. Altre ragioni per usare ns-3 sono la possibilità di avere un comportamento riproducibile e sfruttare i modelli di rete disponibili per impararne il funzionamento. Nato dalle ceneri di ns-2, si è posto dal principio lo scopo generale di essere {\it open-source}, estensibile e mirato alla ricerca e all'insegnamento.  Esistono molti simulatori di rete alternativi, esporremo qui alcune caratteristiche che distinguono ns-3 dagli altri strumenti.
+		
+		\begin{itemize}
+			\item ns-3 è progettato come un{\bf set di librerie} che possono essere combinate tra loro e con altre librerie esterne. Mentre altre piattaforme forniscono una singola interfaccia utente usata per portare avanti ogni tipo di lavoro, ns-3 permette di poter usare diversi strumenti di visualizzazione e analisi di dati esterni
+			
+			\item Anche se principalmente usato su piattaforme Linux, esiste il supporto per FreeDSB e Cygwin per macchine Windows. Supporto nativo per Visual Studio è stato rilasciato in forma sperimentale. 
+		\end{itemize}
+		
+		Lo sviluppo del simulatore è diviso in gruppi differenti, ma le linee guida seguenti sono valide in generale con lo scopo di produrre uno strumento di successo.
+		\begin{itemize}
+			\item {\bf Compatibilità}, essendo il codice basato largamente su simulatori esistenti, come ns-2, GTNetS e altri
+			\item {\bf Scalabilità}, mentre ns-2 era un simulatore sequenziale con una singola esecuzione su un singolo processore, ns-3 può essere utilizzato per simulazioni distribuite e parallele. 
+		\end{itemize}
+
+		Infine un riassunto delle linee guida su cui il team di progetto si fa strada.
+		
+		\begin{itemize}
+			\item {\bf Orientato agli oggetti.} Un simulatore di rete con lo scopo di essere usato dalla comunità di ricerca deve essere facilmente estensibile per includere nuovi protocolli, modifiche degli attuali esistenti o nuovi tipi di instradamento. Per questo gli sviluppatori hanno deciso di portare avanti la scelta già intrapresa con ns-2 di creare una gerarchia di classi C++.
+			
+			\item {\bf Realismo.} Il progetto del simulatore deve permettere di avvicinarsi molto al comportamento di reti reali. Ad esempio oggetti rappresentati gli applicativi dovrebbero interagire con i protocolli di livello quattro in modo simile a quelli reali.
+			
+			\item {\bf Efficienza di memoria.} Il simulatore supporta sia flussi {\it data-less} che flussi {\it data-full}. In altre parole è possibile risparmiare memoria essendo che molto spesso i dati trasportati non hanno significato nel contesto di simulazione e possono essere astratti via.
+			
+			\item {\bf Output configurabile.} Anche per andare incontro ad esigenze di simulazioni di grande portata, i dati da raccogliere sono altamente configurabili a seconda delle esigenze.
+			
+			\item {\bf Statistiche.} Il simulatore include strumenti per creare grafici ed estrapolare dati, in modo da aiutare la caratterizzazione dei risultati di simulazione.
+		\end{itemize}
+		
+		\section{Simulazione della rete}
+		Lo scopo quindi è quello di modellare la nostra rete sul simulatore, cercando di evitare il più possibile discrepanze con la teoria esposta. Purtroppo però per alcune limitazioni operative di ns-3 per quanto riguarda le comunicazioni satellitare e le reti DTN, si è dovuti andare incontro ad alcune approssimazioni per non pesare troppo sulla semplicità e sui tempi di sviluppo. L'elenco seguente raccoglie tutte caratteristiche progettuali adottate per ricostruire la nostra architettura di rete sul simulatore. 
+		
+		\begin{itemize}
+			\item I collegamenti tra HotSpot e Nodo Centrale e anche i collegamenti tra ColdSpot e nodi rurali sono implementati tramite i moduli Ethernet e TCP/IP di ns-3.
+			
+			\item Siccome che i collegamenti satellitari e relativi protocolli specializzati (LTP) non sono ancora stati implementati in ns-3, il collegamento radio è stato approssimato con una rete WiFi. Definendo le interfacce dei nanosatelliti e delle basi di terra con impostazioni particolari è possibile permettere la trasmissione di bundle su distanze molto maggiori delle normali reti WiFi. Il livello di rete invece è un normale IP. Per quanto riguarda il livello di trasporto invece si è sopperiti alla mancanza del Licklider Transmission Protocol (LTP) con il modulo UDP. Per emulare il meccanismo di ritrasmissione LTP, mancante per natura nell'UDP, lo si è implementato a livello applicativo nel bundle DTN. L'accoppiata quindi di UDP e ACK fornito dal Bundle Layer si comporta similmente all'LTP, dove il mittente mantiene una copia dei bundle inviati fintanto che non riceve una risposta positiva dal destinatario di avvenuta ricezione. 
+			
+			\item Per creare una comunicazione radio bidirezionale è stato necessario definire due interfacce radio per ogni nodo wireless, una in {\it Downlink} e una in {\it Uplink}. Questo sebbene ns-3 contenesse un modulo CSMA full-duplex, essendo che si aveva bisogno di un WiFi full-duplex. La soluzione quindi è stata di dotare i nodi con due distinte interfacce Wifi dalle stesse caratteristiche fisiche. Ad esempio un HotSpot mandando un dato ad un nanosatellite userà l'interfaccia di {\it Uplink}, questo riceverà i dati tramite l'interfaccia di {\it Uplink} ma risponderà tramite l'interfaccia di {\it Downlink}. Infine l'HotSpot riceverà la risposta tramite l'interfaccia di {\it Downlink}.
+			
+			
+			
+		\end{itemize}
 		%i compromessi e adattamenti della rete al simulatore
 			
-		\subsection{Scenari di simulazione}
+		\section{Scenari di simulazione}
 		%i diversi scenari spiegati e motivati
 			
-		\subsection{Risultati}
+		\section{Risultati}
 		%tabelle e grafici con i risultati
 	
-	\section{Conclusione e sviluppi futuri}
+	\chapter{Conclusione e sviluppi futuri}
 	%riassunto dei risultati e idee future di sviluppo
 	%contatti multipli e ponti radio
 	%gestione delle scelte di routing in modo dinamico
 	
 	
-	\bibliographystyle{ieeetr}
+	
 	\bibliography{references}
 	
 \end{document}
