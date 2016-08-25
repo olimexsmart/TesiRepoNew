@@ -387,7 +387,7 @@
 		
 		
 
-		\section{Concetti di una rete deterministica}
+		\section{Concetti di una rete deterministica} \label{concDet}
 
 		%%vantaggi di una rete deterministica in termini di gestione e ottimizzazione
 		La Contact Table rappresenta la conseguenza diretta di una rete deterministica come la nostra, dove per ogni istante del tempo di simulazione è definita la topologia della rete e sulla quale possono essere fatte scelte decisionali a priori. Questa peculiarità permette di poter avere una visione di insieme dello stato e di tenere traccia delle conseguenze delle scelte fatte in tempo reale. In altre parole è possibile aggiornare la conoscenza futura dello stato della rete in funzione delle decisioni prese allo stato attuale. Un esempio pratico di questo concetto è stato introdotto dal presente lavoro di Tesi, offrendo interessanti possibilità di sviluppo oltre all'utilizzo implementato in questa sede. 
@@ -398,7 +398,20 @@
 		
 		Avvicinandosi all'implementazione pratica, rimane da chiarire come l'informazione di instradamento venga passata ai nodi coinvolti. La soluzione scelta va a modificare l'{\it header} DTN, aggiungendo alla fine un campo \emph{N Hops}, che indica il numero di salti necessari per raggiungere la destinazione, e infine seguono, in senso di percorrenza, le due informazioni necessarie per identificare un contatto, indirizzo del nodo e tempo di inizio. Queste due ultime informazioni sono ripetute tante volte quanto è indicato nel campo \emph{N Hops}, si ha quindi a che fare con un {\it header} a lunghezza variabile.
 		
-		% Immagine qui del pacchetto completo, forse è il caso di spiegare il pacchetto competo nel secondo capitolo?
+		\vspace{25pt}
+		\begin{bytefield}[bitwidth=0.5em]{64}
+			\bitheader{0, 8, 16, 24, 32, 40, 48, 56, 64} \\
+			\bitbox{8}{N Hops} \\
+			
+			\begin{rightwordgroup}{Paths \\ hops}
+				\bitbox{32}{Contact Start 1} & \bitbox{32}{Next Hop EID 1} \\
+				\bitbox{32}{Contact Start 2} & \bitbox{32}{Next Hop EID 2} \\
+				\wordbox[]{1}{$\vdots$} \\[1ex]
+				\bitbox{32}{Contact Start $N$} & \bitbox{32}{Next Hop EID $N$}
+			\end{rightwordgroup}
+			
+		\end{bytefield}
+		\vspace{25pt}
 		
 		Altra importante precisazione riguarda quali nodi della nostra rete DTN sono addetti alla creazione dei Bundle DTN e di conseguenza al calcolo a sorgente del loro instradamento. \`E necessario distinguere due flussi di traffico, dagli utenti rurali al Nodo Centrale e dal Nodo Centrale verso gli utenti rurali. Il Nodo Centrale ricordiamo essere l'interfaccia di tutta la rete DTN con la rete Internet, risulta quindi obbligatorio che sia la sorgente per tutti i Bundle diretti verso gli utenti rurali. Diversa invece la situazione per il traffico in direzione inversa, dove è il ColdSpot l'interfaccia tra l'utente rurale e Internet, e sono quindi quest'ultimi a generare i Bundle diretti verso il nodo centrale. Per essere più formali bisogna precisare quindi che la rete DTN è confinata dal Nodo Centrale da un lato, connesso poi a Internet, e dai ColdSpot dall'altro, questi connessi ai nodi rurali. Nodo Centrale e ColdSpot definisco i bordi della rete e sono gli unici nodi a poter creare e decidere l'instradamento dei Bundle DTN, ma questa affermazione suscita un'incongruenza sulla quale non è ancora stata fatta chiarezza. Essendo questi due nodi separati non risulta possibile mantenere aggiornati i dati relativi all'uso dei contatti, cioè l'aggiornamento conseguente alla creazione di un bundle DTN al Nodo Centrale, ad esempio, non può essere riportata in tempi brevi e senza spreco di risorse sui database di tutti i ColdSpot della DTN. La soluzione proposta, ma non investigata, parte con un'analisi dei due differenti flussi di traffico. Il traffico generato dai ColdSpot è, generalmente, paragonabile con il traffico in {\it upload} di un normale utente Internet, cioè una moltitudine di piccole richieste verso i server {\it host} di pagine web o email. Questa ipotesi implica trascurare utenze che ad esempio caricano grossi file, tipo video o immagini, e quindi considerare preponderante il traffico nella direzione opposta, cioè, dal punto di vista degli utenti, in {\it download}, che contiene le pagine web stesse piuttosto che altri tipi di dati. La conclusione di questo ragionamento è giustificare la decisione pratica di mantenere i dati aggiornati sui contatti solamente al Nodo Centrale, proprio perché questo nodo si prende carico di {\bf tutto} il traffico diretto da Internet verso i nodi rurali e quindi si ipotizza che questo flusso sia notevolmente più soggetto a porre stress sulla rete. I ColdSpot sono comunque a conoscenza dell'evolversi futura della topologia di rete, possono quindi effettuare le loro scelte di routing ma conoscerne le conseguenze. Sempre motivata dalle considerazioni precedenti, la soluzione, che ricordiamo non è investigata in questo lavoro, potrebbe consistere nel lasciare un margine libero nei contatti da parte del Nodo Centrale per mettere in conto il traffico inverso, ipotizzato piccolo ma non trascurabile. 
 		
@@ -517,7 +530,7 @@
 			\item {\bf Statistiche.} Il simulatore include strumenti per creare grafici ed estrapolare dati, in modo da aiutare la caratterizzazione dei risultati di simulazione.
 		\end{itemize}
 		
-		\section{Simulazione della rete}
+		\section{Simulazione della rete} \label{simRete}
 		Lo scopo quindi è quello di modellare la nostra rete sul simulatore, cercando di evitare il più possibile discrepanze con la teoria esposta. Purtroppo però per alcune limitazioni operative di ns-3 per quanto riguarda le comunicazioni satellitare e le reti DTN, si è dovuti andare incontro ad alcune approssimazioni per non pesare troppo sulla semplicità e sui tempi di sviluppo. L'elenco seguente raccoglie tutte caratteristiche progettuali adottate per ricostruire la nostra architettura di rete sul simulatore. 
 		
 		\begin{itemize}
@@ -526,17 +539,65 @@
 			\item Siccome che i collegamenti satellitari e relativi protocolli specializzati (LTP) non sono ancora stati implementati in ns-3, il collegamento radio è stato approssimato con una rete WiFi. Definendo le interfacce dei nanosatelliti e delle basi di terra con impostazioni particolari è possibile permettere la trasmissione di bundle su distanze molto maggiori delle normali reti WiFi. Il livello di rete invece è un normale IP. Per quanto riguarda il livello di trasporto invece si è sopperiti alla mancanza del Licklider Transmission Protocol (LTP) con il modulo UDP. Per emulare il meccanismo di ritrasmissione LTP, mancante per natura nell'UDP, lo si è implementato a livello applicativo nel bundle DTN. L'accoppiata quindi di UDP e ACK fornito dal Bundle Layer si comporta similmente all'LTP, dove il mittente mantiene una copia dei bundle inviati fintanto che non riceve una risposta positiva dal destinatario di avvenuta ricezione. 
 			
 			\item Per creare una comunicazione radio bidirezionale è stato necessario definire due interfacce radio per ogni nodo wireless, una in {\it Downlink} e una in {\it Uplink}. Questo sebbene ns-3 contenesse un modulo CSMA full-duplex, essendo che si aveva bisogno di un WiFi full-duplex. La soluzione quindi è stata di dotare i nodi con due distinte interfacce Wifi dalle stesse caratteristiche fisiche. Ad esempio un HotSpot mandando un dato ad un nanosatellite userà l'interfaccia di {\it Uplink}, questo riceverà i dati tramite l'interfaccia di {\it Uplink} ma risponderà tramite l'interfaccia di {\it Downlink}. Infine l'HotSpot riceverà la risposta tramite l'interfaccia di {\it Downlink}.
+			%SERVE RIFERIMENTO A QUALCHE PAPER
+			\item L'header DTN è piuttosto diverso da quello canonico, in primo luogo per la parte di SCGR introdotta in \ref{concDet}, in generale semplificato di tutte le parti non necessarie per le simulazioni, minimizzando l'impatto di {\it overhead}.
 			
+			\vspace{25pt}
+			\begin{bytefield}[bitwidth=0.5em]{64}
+				\bitheader{0, 8, 16, 24, 32, 40, 48, 56, 64} \\
+				\bitbox{32}{Destination EID}  & \bitbox{32}{Source EID} \\
+				\bitbox{32}{Sequence Number} & \bitbox{32}{Payload Size} \\
+				\bitbox{32}{Source Timestamp} & \bitbox{8}{Type} & \bitbox{8}{N Hops} \\
+				
+				\begin{rightwordgroup}{Paths \\ hops}
+					\bitbox{32}{Contact Start 1} & \bitbox{32}{Next Hop EID 1} \\
+					\bitbox{32}{Contact Start 2} & \bitbox{32}{Next Hop EID 2} \\
+					\wordbox[]{1}{$\vdots$} \\[1ex]
+					\bitbox{32}{Contact Start $N$} & \bitbox{32}{Next Hop EID $N$}
+				\end{rightwordgroup}
+				
+			\end{bytefield}
+			\vspace{25pt}
 			
+			Nel dettaglio, i primi due campi contengono una stringa che identifica destinazione e sorgente. Il Sequance Number differenzia ogni bundle generato con un numero univoco. Il Payload Size indica la quantità di dati trasportati, espressi in byte. Source Timestamp contiene l'istante in cui il bundle è stato generato. Il campo Type al momento è definito per tre valori diversi: 
+			\begin{itemize}
+				\item {\bf 0} Data bundle, trasporta dati
+				\item {\bf 1} ACK bundle, conferma di avvenuta ricezione
+				\item {\bf 2} Status bundle, generiche informazioni di servizio
+			\end{itemize}
 			
+			Quindi se un bundle dati arriva ad un nodo DTN questo è seguito da un bundle ACK nella direzione opposta per comunicare l'avvenuta ricezione. Questo bundle porta lo stesso Sequence Number del bundle dati che l'ha generato. Per implementare questo meccanismo ogni nodo tiene una lista dei socket in trasmissione attivi, un socket per ogni bundle. Ogni socket attivo ha un timeout, se allo scadere di questo non viene ricevuto l'ack il bundle viene inviato nuovamente, altrimenti si elimina il socket dalla lista. 
+				
 		\end{itemize}
-		%i compromessi e adattamenti della rete al simulatore
 			
 		\section{Scenari di simulazione}
 		%i diversi scenari spiegati e motivati
+		Gli scenari sono la caratterizzazione di una specifica simulazione in termini di quantità di nodi e la loro disposizione. Per ragioni pratiche di tempi simulazione e capacità di calcolo si mantiene il numero dei nodi nell'ordine delle decine.
+		
+		\begin{itemize}
+			\item {\bf Scenario UNO:} 8 HotSpot, 24 nanosatelliti, 16 ColdSpot
+			\item {\bf Scenario DUE:} 16 HotSpot, 24 nanosatelliti, 32 ColdSpot
+			\item {\bf Scenario TRE:} 8 HotSpot, 42 nanosatelliti, 16 ColdSpot
+		\end{itemize}
+		
+		Scenario UNO è il riferimento per gli altri due scenari, dove scenario DUE studia le prestazioni per un aumento delle stazioni di terra, mentre scenario TRE aumenta il numero di nanosatelliti in orbita.
+		
+		%IMMAGINI CON POSIZIONI DELLE STAZIONI DI TERRA
+		
+		Quindi scenario UNO e DUE condividono la stessa costellazione di 24 nanosatelliti equamente distribuiti su 4 piani orbitali. Le figure XX e XX mostrano le differenti disposizioni sul pianeta delle stazioni di terra. Notare come gli HotSpot sono posizionati in zone civilizzate e connesse e invece i ColdSpot sono disseminati in zone desertiche, parchi naturali, isole e insediamenti remoti. 
+		Lo scenario TRE invece propone una differente costellazione, con 42 nanosatelliti distribuiti su 6 piani orbitali. Le stazioni di terra sono nelle stesse posizioni dello scenario UNO.
+		
+		Per quanto riguarda i flussi di traffico simulati su questi scenari si è stabilito uno schema composto da cinque flussi di traffico. La denominazione {\bf RN} sta per Rural Node e la distinzione tra flussi fa riferimento alla diversa quantità di nodi rurali di destinazione. I cinque diversi flussi quindi sono: {\bf 1RN, 2RN, 4RN, 8RN, 16RN}. Per ogni nodo rurale partono 1000 bundle che trasporta 50Kb di dati, generati uno al secondo a partire dal dall'istante zero di simulazione. Questa trama punta a farci capire come i differenti scenari reagiscono a intensità di traffico crescenti.
+		
+		Infine tutti e tre gli scenari sono descritti dai seguenti parametri che rimangono invariati. Le orbite hanno un raggio di 6652655 metri, i satelliti quindi orbitano a 281655 metri dal suolo. Ogni nanosatellite è un CubeSat con una massa di 1.33Kg. Con questi parametri si ottengono periodi orbitali di circa 90 minuti.
+		
+		Le interfacce sono di tipo WiFi 802.11b a 2.4GHz, la velocità di trasmissione è di 63052 Bps. I protocolli superiori sono quelli esposti in \ref{simRete}.
+		
+		In modo da fornire un termine di paragone di riferimento per i dati raccolti con algoritmo di instradamento SCGR, si sono simulati gli stessi scenari e flussi con una scelta di instradamento statica. In pratica ad ogni zona rurale di destinazione è stato associato in modo statico un HotSpot che inoltrava i dati al primo nanosatellite disponibile. Questo nanosatellite manteneva i dati fintanto che non si trovava in contatto con la zona rurale di destinazione. Ci si riferirà a questo termine di paragone con il termine {\bf "Static"}, contrapposto a {\bf "SCGR"}, cioè la soluzione proposta in questa tesi.
 			
 		\section{Risultati}
 		%tabelle e grafici con i risultati
+		
 	
 	\chapter{Conclusione e sviluppi futuri}
 	%riassunto dei risultati e idee future di sviluppo
