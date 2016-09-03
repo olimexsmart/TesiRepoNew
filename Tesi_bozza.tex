@@ -56,86 +56,87 @@
 		
 		\section{Origini e idea generale}
 		
-		Le reti convenzionali mal si adattano in condizioni ambientali estreme e in recenti anni questo problema è stato oggetto di ricerca. I principali limiti dei dispositivi operanti in queste circostanze riguardano la capacità di rete limitata, la scarsa disponibilità di energia e memoria, il movimento e in particolare lunghi ritardi e connettività intermittente. Queste ultime limitazioni saranno la caratteristica principale di questo lavoro, incentrato su reti di tipo satellitare dove il costante movimento orbitale impone una connettività intermittente e la notevole distanza tra i nodi risente del limite di propagazione della luce. La comune pila ISO/OSI male si adatta a queste condizioni, soffrendo a più livelli delle peculiari caratteristiche della rete. In particolare la combinazione TCP/IP è resa inutilizzabile da questi impedimenti e questo argomento verrà approfondito nel prossimo capitolo. Varie soluzioni sono state proposte per affrontare questo problema, tra cui i Performance Enhancing Proxies (PEPs) che però, oltre a non rappresentare una vera soluzione, creano problemi di incompatibilità con gli attuali protocolli di sicurezza.
+		Le reti convenzionali mal si adattano a condizioni ambientali estreme e questo argomento è un campo attivo di ricerca. I principali limiti dei dispositivi operanti in queste circostanze riguardano la capacità di trasmissione limitata, la scarsa disponibilità di energia e memoria, il movimento e in particolare lunghi ritardi e connettività intermittente. Queste ultime limitazioni caratterizzeranno principalmente lo scenario considerato in questo lavoro, incentrato su reti di tipo satellitare dove il costante movimento orbitale impone una connettività intermittente e la notevole distanza tra i nodi risente del limite della velocità di propagazione della luce. La comune pila ISO/OSI male si adatta a queste condizioni, soffrendo a più livelli delle peculiari caratteristiche della rete. In particolare la combinazione TCP/IP è resa inutilizzabile da questi impedimenti e tale argomento verrà approfondito nel capitolo \ref{limProt}. Varie soluzioni sono state proposte per affrontare questo problema, tra cui i Performance Enhancing Proxies (PEPs) \cite{borderperformance} che però, oltre a non rappresentare una vera soluzione, creano problemi di incompatibilità con gli attuali protocolli di sicurezza.
 		
-		Una valida soluzione alternativa è l'architettura DTN, che introduce un protocollo, chiamato Bundle Protocol (BP), sovrastante il livello di trasporto (TCP, UDP, etc..) o il livello fisico (Bluetooth, Ethernet, ...). Questa aggiunta permette la memorizzazione su lunghi periodi ai nodi intermedi, permettendo così di poter affrontare interruzioni del canale e lunghi ritardi. Dividendo il percorso end-to-end in più salti di tipo DTN si estende il concetto di TCP-splitting già utilizzato sui PEP, permettendo di usare protocolli specializzati necessari, ad esempio, sui link satellitari.
+		Una valida soluzione alternativa è il paradigma DTN \cite{caini2011delay}, il quale prevede l'introduzione di un layer aggiuntivo, chiamato Bundle Layer (BL)\cite{cerf2007rfc}, e del corrispondente protocollo, chiamato Bundle Protocol (BP)\cite{scott2007bundle}, sovrastante il livello di trasporto (TCP, UDP, etc..) o il livello fisico (Bluetooth, Ethernet, ...). Questa aggiunta permette di affrontare interruzioni del canale e lunghi ritardi garantendo la memorizzazione dei dati anche per lunghi periodi nei nodi intermedi, in attesa che il canale torni disponibile. Dividendo il percorso end-to-end in più salti di tipo DTN si estende il concetto di TCP-splitting già utilizzato sui PEP, permettendo di usare protocolli specializzati necessari, ad esempio, sui link satellitari.
 		
-		\section{Limitazioni dei protocolli convenzionali in condizioni estreme}
+		\section{Limitazioni dei protocolli convenzionali in condizioni estreme} \label{limProt}
 		
-		Per meglio comprendere le limitazioni che i protocolli standard di Internet hanno in condizioni di rete precarie verrà proposto un esempio. Consideriamo uno scenario composto da un centro di ricerca, un complesso di antenne e un satellite in orbita marziana. La situazione è schematizzata nella figura (ref to im). 
+		Per meglio comprendere le limitazioni che i protocolli standard di Internet hanno in condizioni di rete precarie verrà proposto un esempio. Consideriamo uno scenario composto da un centro di ricerca, un complesso di antenne e un satellite in orbita attorno a Marte. La situazione è schematizzata in figura (ref to im). 
 		
 		Il percorso che divide il laboratorio dalle antenne per lo spazio profondo è una rete Internet convenzionale, caratterizzata da:
 		\begin{itemize}
-			\item Basse latenze, nell'ordine dei millisecondi.
-			\item Alte velocità, fino a qualche Gb/s
-			\item Comunicazione bidirezionale
-			\item Connettività sorgente-destinazione continua
+			\item basse latenze, nell'ordine dei millisecondi;
+			\item alte velocità, fino a qualche Gb/s;
+			\item bassa probabilità di errore;
+			\item comunicazione bidirezionale;
+			\item connettività sorgente-destinazione continua;
 		\end{itemize}
-		Quindi in questo tratto lo stack TCP/IP è usato nelle sue condizioni nominali, potendo offrendo tutti i servizi che conosciamo come frammentazione e ritrasmissione automatica. 
+		Quindi in questo tratto lo stack TCP/IP è usato nelle sue condizioni nominali, offrendo tutti i servizi che conosciamo come frammentazione e ritrasmissione automatica. 
 		
-		Analizzando invece il secondo tratto di comunicazione, tra il complesso di antenne e l'orbiter marziano, ci accorgiamo che la situazione è ben diversa:
+		Analizzando invece il secondo tratto di comunicazione, tra il complesso di antenne e l'orbiter attorno a Marte, ci accorgiamo che la situazione è ben diversa:
 		\begin{itemize}
-			\item Lunghe latenze di propagazione, nell'ordine di minuti
-			\item Basse velocità, tipicamente qualche decina di Kb/s
-			\item Interruzioni a causa di interferenze
-			\item Connessione deterministicamente intermittente
+			\item lunghe latenze di propagazione, nell'ordine di minuti;
+			\item basse velocità, tipicamente qualche decina di Kb/s;
+			\item interruzioni a causa di interferenze;
+			\item connessione deterministicamente intermittente;
 		\end{itemize}
-		Le lunghe latenze rendono inutilizzabile il meccanismo di ritrasmissione del TCP eccedendo abbondantemente i timeout propri del protocollo. Inoltre il meccanismo di handshake a tre stadi si protrarrebbe fino ad occupare gran parte dell'oportunità di contatto. Protocolli alternativi al TCP sono l'UDP, che però non offre meccanismi di ritrasmissione automatica, e altri più esotici che comunque non produrrebbero risultati soddisfacenti per le stesse ragioni del TCP.
-		Risulta quindi che non è possibile usare un unico stack di protocolli su tutti i segmenti della rete, pur rimanendo nella necessità di avere un meccanismo di ritrasmissione automatico (ARQ). 
-		Infine l'ultimo impedimento è la connessione intermittente che dai normali sistemi di routing è elaborata come una totale disconnessione eccedendo i tempi di timeout standard. Il nodo è quindi considerato strutturalmente perso piuttosto che in una disconnessione pianificata e di conseguenza un tipico calcolo di percorso basato su IP non è possibile.
+		Le lunghe latenze rendono inutilizzabile il meccanismo di ritrasmissione del TCP eccedendo abbondantemente i timeout propri del protocollo. Inoltre il meccanismo di handshake a tre stadi si protrarrebbe fino ad occupare gran parte dell'opportunità di contatto. Protocolli alternativi al TCP sono l'UDP, che però non offre meccanismi di ritrasmissione, e altri più esotici che comunque non produrrebbero risultati soddisfacenti per le stesse ragioni del TCP.
+		
+		Risulta quindi che non è possibile usare lo stesso stack di protocolli su tutti i nodi della rete, pur rimanendo nella necessità di avere un meccanismo di ritrasmissione automatico (ARQ). 
+
+		Infine l'ultimo impedimento è la connessione intermittente che dai normali sistemi di routing è elaborata come una totale disconnessione dovuta alla mancanza di un percorso attivo tra sorgente e destinazione. Il nodo è quindi considerato non più presente nella rete piuttosto che temporaneamente disconnesso e di conseguenza un tipico calcolo di percorso basato su IP non lo tiene più in considerazione.
 		
 		
 		\section{Architettura DTN}		
 		
-		L'archittettura DTN è basata sull'introduzione di un nuovo strato protocollare a livello di trasporto o anche a livelli più bassi chiamato Bundle Protocol (BP). Il punto essenziale è dotare i nodi della capacità di gestire ritardi e disconnessioni, permettendo di memorizzare i dati localmente in attesa dell'opportunità per inoltrarli al prossimo nodo. 
+		L'archittettura DTN, raffigurata in figura (INSERISCI) è basata sull'introduzione di un nuovo strato protocollare a livello di trasporto o anche a livelli più bassi chiamato Bundle Protocol (BP). Il punto essenziale è dotare i nodi della capacità di gestire ritardi e disconnessioni, permettendo di memorizzare i dati localmente in attesa dell'opportunità per inoltrarli al prossimo nodo e di garantire una comunicazione attraverso reti eterogenee, cioè basate su differenti protocolli e tecnologie. 
 		
-		Il Bundle Protocol è in grado di interfacciarsi con i livelli inferiori, generalmente di trasporto, per mezzo di Convergence Layer Adapters (CLAs). Nel tempo sono stati definiti vari CLA, a cominciare dai protocolli di trasporto più comuni come TCP, UDP, LTP, passando poi anche nella seconda versione (DTN2) a protocolli di livello datalink come Bluetooth ed Ethernet. 
+		Il Bundle Protocol è in grado di interfacciarsi con i livelli inferiori, generalmente di trasporto, per mezzo di Convergence Layer Adapters (CLAs). Nel tempo sono stati definiti vari CLA, a cominciare sia dai protocolli di trasporto più comuni come TCP e UDP, che più specifici, come il Licklider Transmossion Protocol (LTP) \cite{ramadas2008rfc}, passando poi anche nella seconda versione (DTN2) a protocolli di livello datalink come Bluetooth ed Ethernet. 
 		In combinazione con il BP, ogni nodo può utilizzare il CLA più adatto per l'inoltro successivo. 
 		
 		L'uso del Bundle Protocol è guidato da alcuni principi di design a livello applicativo che contribuiscono ad ottenere migliori risultati:
 		\begin{itemize}
-			\item Gli applicativi sono tenuti a minimizzare gli scambi di andata e ritorno
-			\item Gli applicativi dovrebbero essere in grado di gestire interruzioni improvvise mantenendo il trasferimento attivo
-			\item Gli applicativi sono tenuti a specificare il tempo di validità dei dati e loro importanza relativa.
-		\end{itemize}
+			\item gli applicativi sono tenuti a minimizzare gli scambi di andata e ritorno;
+			\item gli applicativi dovrebbero essere in grado di gestire interruzioni improvvise mantenendo il trasferimento attivo;
+			\item gli applicativi sono tenuti a specificare il tempo di validità dei dati e loro importanza relativa.
+		\end{itemize}	
+		L'architettura DTN offre le seguenti caratteristiche:
 		
-		
-		L'architettura DTN offre diverse nuove caratteristiche che saranno elencate e descritte di seguente.
 		\begin{itemize}
-			\item La DTN può agire come strato legante di tecnologie disomogenee, come reti wireless {\it ad hoc} di sensori, WLAN, link satellitari, internet, ecc. Affinché il BP sia correttamente gestito, sui nodi della rete è necessario che sia installato il Bundle Protocol Agent (BPA), che permetterà di dividere il percorso in vari hop DTN. Nei diversi hop potranno essere usati differenti CLA per adattarsi ai molteplici protocolli a cui una rete disomogenea può appoggiarsi. Oppure è anche possibile appoggiarsi a diverse varianti dello di un protocollo utilizzando lo stesso CLA in hop successivi. L'architettura multi-hop DTN può essere vista come una generalizzazione del TCP-splitting, aspetto che verrà approfondito nella prossima sottocapitolo.
+			\item La capacità di agire come strato legante per tecnologie eterogenee, come reti wireless {\it ad hoc} di sensori, WLAN, link satellitari, Internet, ecc. Ciascun nodo potrà implementare differenti CLA per adattarsi ai molteplici protocolli a cui una rete disomogenea può appoggiarsi. In hop successivi è anche possibile appoggiarsi a diverse varianti dello stesso protocollo utilizzando lo stesso CLA. 
 			
-			\item Possibilità di archiviazione ai nodi intermedi. Questa è un'importante differenza dallo stack TCP/IP tradizionale, dove, in presenza di reti convenzionali che assumono connettività persistente e brevi ritardi, i router intermedi trattengono l'informazione solo per brevi periodi lasciando la memorizzazione a lungo termine solo ai nodi finali. Questo è motivato dal fatto che appoggiandosi una connessione stabile si suppone che l'informazione possa essere recuperata direttamente dalla fonte. Tutto ciò ovviamente non è possibile nelle reti in condizioni estreme e, nell'ottica di riuscire ad affrontare i lunghi tempi di andata e ritorno come anche le interruzioni di canale, nelle reti DTN è necessario che i nodi intermedi abbiano la possibilità di memorizzare a lungo termine l'informazione. Questo contribuisce alla robustezza dell'architettura in presenza di disturbi, disconnessioni e problemi tecnici temporanei come ad esempio riavvi del nodo. Da un altro punto di vista però la memorizzazione a lungo termine può portare a congestionare i nodi, questa è una conseguenza da considerare e gestire.
+			\item Possibilità di archiviazione nei nodi intermedi. Questa è un'importante differenza dallo stack TCP/IP tradizionale, dove, in presenza di reti convenzionali che assumono connettività persistente e brevi ritardi, i router intermedi trattengono l'informazione solo per brevi periodi lasciando la memorizzazione a lungo termine solo ai nodi finali. Questo è motivato dal fatto che avendo a disposizione una connessione stabile si suppone che l'informazione possa essere recuperata direttamente dalla fonte. Tutto ciò ovviamente non è possibile nelle reti in condizioni estreme e, nell'ottica di riuscire ad affrontare i lunghi tempi di andata e ritorno come anche le interruzioni di canale, nelle reti DTN è necessario che i nodi intermedi abbiano la possibilità di memorizzare a lungo termine l'informazione. Questo contribuisce alla robustezza dell'architettura in presenza di disturbi, disconnessioni e problemi tecnici temporanei come ad esempio riavvi del nodo. Da un altro punto di vista però la memorizzazione a lungo termine può portare a congestionare i nodi e all'esaurimento dello spazio di memoria disponibile, questa è una conseguenza da dover considerare e gestire.
 			
-			\item Tenendo a mente il contesto generale di una rete prona a non avere una connessione persistente tra sorgente e destinazione, l'architettura DTN stabilisce che il nodo avente i dati è responsabile per questi ultimi. Quindi eventuali ritrasmissioni che nelle reti convenzionali sono gestite dai nodi finali qui sono gestite da ogni singolo nodo intermedio.
+			\item {\it Custody Transfer:} tenendo a mente il contesto generale di una rete prona a non avere una connessione persistente tra sorgente e destinazione, l'architettura DTN stabilisce che il nodo avente i dati è responsabile per questi ultimi. Quindi eventuali ritrasmissioni che nelle reti convenzionali sono gestite dai nodi finali qui sono gestite da ogni singolo nodo intermedio, a cui è stata temporaneamente trasferita la custodia del dato.
 			
-			\item Late Binding: ogni nodo della rete DTN è identificato da un Endpoint Identifier (EID), che sintatticamente è rappresentato da un Uniform Resource Identifier (URI). Nel Bundle Protocol non esiste concetto di indirizzo, l'instradamento è basato puramente su EID. Quindi la risoluzione DNS di un nome destinazione può essere posposta (Late Binding) fino a che non si entra in contatto con la struttura necessaria e il percorso fatto finora è basato su EID. Questa è una caratteristica che permette di aggirare la mancanza di specifiche strutture come un DNS in reti isolate.
+			\item Late Binding: ogni nodo della rete DTN è identificato da un Endpoint Identifier (EID), espresso sintatticamente come un Uniform Resource Identifier (URI) \cite{berners2005rfc}. Nel Bundle Protocol non esiste il concetto di indirizzo, l'instradamento è basato puramente su EID. Quindi la risoluzione DNS di un nome destinazione può essere posposta (Late Binding) fino a che non si entra nella porzione di rete in grado di compiere interamente tale risoluzione. Questa è una caratteristica che permette di aggirare la mancanza di specifiche strutture come un DNS aggiornato in reti isolate.
 			
-			\item Il routing in questa architettura deve coinvolgere priorità diverse dalle reti tradizionali, come ad esempio la capacità di memorizzazione e la gestione dell'energia. Certamente il tempo di consegna rimane un aspetto importante, ma in questo contesto può essere soggetto a compromessi. Infine il routing deve gestire il concetto di contatto, che si può definire come intervallo di tempo nel quale dei nodi possono scambiarsi dati e con una certa aspettativa di banda. La  quantificazione di tutti questi aspetti non è banale.
+			\item Routing: deve considerare priorità diverse dalle reti tradizionali, come ad esempio la capacità di memorizzazione e la gestione dell'energia. Certamente il tempo di consegna rimane un aspetto importante, ma in questo contesto può essere soggetto a compromessi. Infine il routing deve gestire il concetto di contatto, che si può definire come intervallo di tempo nel quale due nodi possono scambiarsi una certa quantità di dati. La  quantificazione di tutti questi aspetti non è banale.
 			
-			\item L'architettura DTN definisce due tipi di frammentazione, proattiva e reattiva. La prima è adatta in situazioni dove la connessione è pianifica o deterministica (tempo di contatto) e si è a conoscenza della quantità di dati scambiabili per ogni finestra temporale (volume di contatto). Quindi quando la connessione è conosciuta a priori, come ad esempio in comunicazioni spaziali, è possibile frammentare grossi bundle pianificando con precisione i trasferimenti compatibilmente con il volume di contatto disponibile.
-			Al contrario la frammentazione reattiva entra in gioco a posteriori, quando ad esempio la connessione viene interrotta frequentemente e sono necessarie ritrasmissioni.
-			
+			\item Frammentazione: può essere di due tipi, proattiva e reattiva. La prima è adatta in situazioni dove la connessione è pianifica o deterministica (tempo di contatto) e si è a conoscenza della quantità di dati scambiabili per ogni finestra temporale (volume di contatto). Quindi quando la connessione è conosciuta a priori, come ad esempio in comunicazioni spaziali, è possibile frammentare grossi bundle pianificando con precisione i trasferimenti compatibilmente con il volume di contatto disponibile.
+			Al contrario la frammentazione reattiva entra in gioco a posteriori, quando ad esempio la connessione viene interrotta frequentemente ed inaspettatamente e sono necessarie ritrasmissioni.
 			
 		\end{itemize}
 		
 		
 		\section{DTN come evoluzione del TCP splitting}
-		L'accesso a internet tramite TCP/IP ha portato allo sviluppo dei PEP e in generale di {\it protocol boosters } per adattare questo stack in reti eterogenee. Il loro ruolo modifica attivamente il flusso sorgente-destinazione per adattare ai nodi TCP/IP i tratti con prestazioni povere, di fatto inducendoli a credere di avere a che fare con connessioni a prestazioni migliori. Gli esempi proposti saranno incentrati sulla comunicazione satellitare, essendo questa uno scenario di tipico utilizzo dei PEP. Il link satellitare infatti presenta forti latenze e altre peculiarità che rendono necessari protocolli specializzati come LTP. I PEP o alternativamente le DTN si occupano di spezzare la connessione a livello di trasporto (TCP) per permettere la sostituzione di quest'ultimo con LTP, ad esempio. 
+		L'accesso a Internet tramite TCP/IP ha portato allo sviluppo dei PEP e in generale di {\it protocol boosters } per adattare questo stack in reti eterogenee. Il loro ruolo modifica attivamente il flusso sorgente-destinazione per adattare ai nodi TCP/IP i tratti con prestazioni povere, di fatto inducendoli a credere di avere a che fare con connessioni a prestazioni migliori. Gli esempi proposti saranno incentrati sulla comunicazione satellitare, essendo questa uno scenario di tipico utilizzo dei PEP. Il link satellitare infatti presenta forti latenze e altre peculiarità che rendono necessari protocolli specializzati come LTP. I PEP o alternativamente le DTN si occupano di spezzare la connessione a livello di trasporto.
 		%non ho capito un accidente dei principi di fate sharing
 		
-		Principalmente sono possibili due configurazioni diverse di PEP: distribuiti ed integrati. I primi sono presenti da entrambi i lati del link satellitare, i secondi invece solo da un lato del link satellitare. 
+		Principalmente sono possibili due configurazioni diverse di PEP: distribuiti ed integrati. I primi sono presenti da entrambi i lati del link satellitare, i secondi invece solo da un lato. 
 		%Immagine presa dal vostro paper al riguardo
-		La tipologia più comune di PEP effettua il TCP splitting, dividendo la connessione a livello di trasporto in due parti. Nei PEP distribuiti quindi si hanno tre connessioni diverse, dove la prima e l'ultima generalmente sono su TCP standard e rete cablata, mentre la seconda sul link satellitare ne usa una versione specializzata.
-		Il corrispondente DTN è simile a quest'ultima configurazione, essendo che l'architettura prevede i nodi avere installata la gestione del BP.
-		Nei PEP integrati invece la connessione è spezzata in sole due parti, la prima con su rete cablata con TCP convenzionale e la seconda con un protocollo specializzato che però non può essere radicalmente diverso ma compatibile con il TCP standard.
+		La tipologia più comune di PEP effettua il TCP splitting, dividendo la connessione a livello di trasporto in due parti. Nei PEP distribuiti quindi si hanno tre connessioni diverse, dove la prima e l'ultima generalmente utilizzano TCP standard, mentre la seconda sul link satellitare un differente protocollo.
+		Il corrispondente DTN è simile a quest'ultima configurazione.
+		Nei PEP integrati invece la connessione è spezzata in sole due parti, la prima con su rete cablata con TCP convenzionale e la seconda con un protocollo specializzato ma comunque compatibile con il TCP standard.
 		%Immagine con i due differenti stack
 		
-		Riassumendo le principali similarità e differenze:
+		Riassumendo, le principali similarità e differenze sono:
 		\begin{itemize}
-			\item Entrambi hanno due connessioni a livello di trasporto, una cablata e l'altra satellitare.
-			\item Entrambi possono usare una variante del TCP specializzata per la connessione satellitare.
-			\item La soluzione DTN richiede che i nodi abbiano installata la gestione del BP
-			\item Il TCP splitting viola il principio di connessione end to end, perché i PEP agiscono sia al livello applicativo che di trasporto, facoltà in teoria riservata ai soli nodi finali. Nelle DTN questo problema è superato perché il ruolo del TCP è ridefinito essendo che ogni hop DTN è previsto sia una connessione a sé stante.
+			\item entrambi hanno due connessioni a livello di trasporto, una cablata e l'altra satellitare;
+			\item entrambi possono usare una variante del TCP specializzata per la connessione satellitare;
+			\item la soluzione DTN richiede che i nodi abbiano installato il BP;
+			\item il TCP splitting viola il principio di connessione end to end, perché i PEP agiscono sia al livello applicativo che di trasporto. Nelle DTN questo problema è superato perché il ruolo del TCP è ridefinito: ogni hop DTN è una connessione a sé stante.
  		\end{itemize}
 		
 		
@@ -144,10 +145,10 @@
 		
 		\section{Framework}	
 
-		L'idea generale su cui si basa questo lavoro è una costellazione di nanosatelliti operanti con il paradigma DTN, inizialmente sviluppata in uno scenario dove diverse orbite non interagivano \cite{cello2014hot}, limitata quindi allo stesso piano orbitale, si è evoluta poi in uno scenario tridimensionale. Il satellite diventa un contenitore di dati che con il suo movimento li trasporta fino a destinazione. In questo scenario sono possibili scambi di dati tra satelliti in orbita, ma non sono possibili contatti tra più di due satelliti. Il costo decisamente più contenuto dell'infrastruttura è la motivazione principale di una rete satellitare di questo genere, proposta come alternativa alle soluzioni commercialmente disponibili. Nei prossimi paragrafi verranno approfonditi aspetti tecnici come le diverse tipologie di satellite, orbita e infrastruttura. Infine sarà a approfondito l'uso di questa piattaforma per l'estensione della rete Internet a zone rurali.
+		L'idea generale su cui si basa questo lavoro è una costellazione di nanosatelliti operanti con il paradigma DTN. Inizialmente sviluppata a partire da uno scenario mono orbita \cite{cello2014hot}, si è evoluta al caso multi orbita con nodi distribuiti in uno spazio tridimensionale. Il satellite risulta essere un contenitore di dati che con il suo movimento sono trasportati fino a destinazione. In questo scenario sono possibili scambi di dati tra due satelliti appartenenti ad orbite differenti \textit{(inter-orbitali)} ma non alla stessa orbita \textit{(intra-orbitali)}. Non sono inoltre possibili contatti tra più di due satelliti contemporaneamente, che comporterebbe accessi multipli al canale. Il costo decisamente più contenuto dell'infrastruttura è la motivazione principale di una rete satellitare di questo genere, proposta come alternativa alle soluzioni commercialmente disponibili. 
 		
 		\section{Orbite e piattaforma satellitare}
-		Per meglio comprendere la configurazione della nostra costellazione seguirà un breve approfondimento sulle differenti tipologie di orbita e satellite. Infine sarà esposta e motivata la nostra scelta.
+		Per meglio comprendere la configurazione della nostra costellazione seguirà un breve approfondimento sulle differenti tipologie di orbita e satellite. 
 
 			\subsection{Classificazione delle orbite}
 			La meccanica orbitale di corpi naturali e artificiali è governata dalle tre leggi di Keplero. Comprendendo queste regole è possibile giustificare le caratteristiche dei differenti tipi di orbita usati per i satelliti artificiali. Le leggi sono valide nel caso la massa del corpo orbitante è trascurabile rispetto al corpo centrale e si possono trascurare le interazioni con corpi diversi oltre i due in esame. Queste approssimazioni sono valide nel nostro caso di studio e le leggi sono riformulate dal punto di vista di un satellite artificiale in orbita terrestre.
@@ -159,127 +160,137 @@
 			
 			Intuitivamente la prima legge mostra come un'orbita circolare rappresenti un caso particolare di orbita e  come questo possa produrre comportamenti particolari. La seconda e terza invece legano la distanza dei due corpi a come il tempo di orbita è distribuito e a quanto ammonta, rispettivamente. Il concetto generale è quindi che più un satellite è distante più questo è lento nel procedere sulla sua orbita.
 			
-			La classificazione orbitale è basata sui seguenti parametri: altitudine, eccentricità, inclinazione, corpo centrale, sincronia. Sono elencati solo le classificazioni di interesse per i satelliti artificiali.
-						
-			{\large \bf ALTITUDINE}
+			La classificazione orbitale è basata sui seguenti parametri:
 			\begin{itemize}
-				\item {\bf LEO - Low Earth Orbit}
-				L'altitudine è compresa tra i 160km e 2000km, con orbite di circa 1-2 ore di durata. Ogni satellite compre solo una porzione della superficie terrestre quindi è necessaria una costellazione per assicurare una copertura globale. Per la relativa vicinanza alla superficie le comunicazioni sono a bassa latenza e non è necessaria grande potenza in trasmissione.
-				\item {\bf MEO - Medium Earth Orbit}
-				Altitudini comprese tra 5000km e 10000 km, tipicamente usate per i sistemi di posizionamento, osservazione della terra e più raramente telecomunicazioni. Il periodo orbitale è intorno alle 12 ore. Sono ancora richiesti più satelliti per una copertura globale.				
-				\item {\bf GEO - Geostazionary Earh Orbit}
-				Questo è un particolare tipo di orbita, posta a 35786 km sopra l'equatore, che permette di posizionare il satellite in un punto fisso rispetto alla superficie terrestre. La maggior parte dei satelliti per telecomunicazioni sfrutta questo tipo di orbita che però, data la grande distanza da terra, soffre di una lunga latenza.
+				\item \textbf{Altitudine}, intesa come la distanza verticale di un oggetto da un livello noto (di riferimento), chiamato \textit{livello zero}. Nel nostro caso il riferimento è il livello del mare.
+				
+				\item \textbf{Eccentricità}, parametro che indica la deviazione di un'orbita dall'essere perfettamente circolare ad avere la forma di una sezione conica. 
+				
+				\item \textbf{Inclinazione}, angolo tra il piano orbitale e il piano equatoriale del pianeta.
+				
+				\item \textbf{Corpo centrale}, cioè il pianeta a cui orbita attorno il satellite.
+				
+				\item \textbf{Sincronia}, possibile corrispondenza tra il periodo di rivoluzione del satellite e il periodo di rotazione del pianeta.
 			\end{itemize}
+
 			
-			{\large \bf ECCENTRICITÀ}	
 			\begin{itemize}
-				\item Orbita circolare, particolare caso dell'orbita ellittica, fanno parte di questo gruppo l'orbita GEO e l'orbita di trasferimento di Hoffman, usata per trasferire veicoli spaziali tra orbite diverse. In generale anche le orbite basse fanno parte di questa categoria, sempre con un certo grado di approssimazione.
-				\item Orbite eccentriche, entrambe queste orbite sono usate per sistemi di comunicazione e militari, quasi esclusivamente da Russi. \begin{itemize}
-					\item Molnya orbit
-					\item Tundra orbit					
-				\end{itemize}
-				Importante notare come queste fruttino la seconda legge di Keplero per soffermarsi per più tempo possibile sopra una specifica zona terrestre. Infatti con una forte eccentricità si ha che il satellite trascorre la maggior parte del tempo nella zona più alta dell'orbita (Apogeo). 								
-			\end{itemize}
-			
-			{\large \bf INCLINAZIONE}	
-			L'inclinazione è l'angolo tra il piano equatoriale terreste e il piano orbitale del satellite.
-			\begin{itemize}
-				\item Orbita polare, con inclinazione prossima ai 90 gradi, passante quindi per i poli del pianeta.
-				\item Polare sincrona solare, permette di passare sopra l'equatore sempre alla stessa ora locale. Utile per sistemi di immagine satellitari.
-			\end{itemize}
-			
-			{\large \bf CORPO CENTRALE}	
-			\begin{itemize}
-				\item Geocentrica, orbitante attorno alla Terra.
-				\item Eliocentrica, orbitante attorno al Sole
-				\item Aerocentrica, orbitante attorno a Marte.
-			\end{itemize}
-		
-		
-			{\large \bf SINCRONIA}	
-			\begin{itemize}
-				\item Sincrona, avente periodo orbitale uguale al periodo di rotazione del corpo centrale. Le orbite GEO fanno parte di questo gruppo (GSO)
-				\item Semi Sincrona, avente periodo di rotazione pari alla metà del periodo di rotazione del corpo centrale. Ad esempio sistemi di localizzazione in MEO.
-			\end{itemize}
-			
+
+				\item {\bf ALTITUDINE}
+					\begin{itemize}
+						\item {\bf LEO - Low Earth Orbit}
+						: altitudine è compresa tra i 160 km e 2000 km, con orbite di circa 1-2 ore di durata. Ogni satellite copre solo una porzione della superficie terrestre quindi è necessaria una costellazione per assicurare una copertura globale. Per la relativa vicinanza alla superficie le comunicazioni sono a bassa latenza e non è necessaria grande potenza in trasmissione.
+						\item {\bf MEO - Medium Earth Orbit}
+						: altitudini comprese tra 5000 km e 10000 km, tipicamente usate per i sistemi di posizionamento, osservazione della Terra e più raramente telecomunicazioni. Il periodo orbitale è intorno alle 12 ore. \'E necessario più di un satellite per una copertura globale.				
+						\item {\bf GEO - Geostationary Earth Orbit}
+						: questo è un particolare tipo di orbita, posta a 35786 km sopra l'equatore, che permette di posizionare il satellite in un punto fisso rispetto alla superficie terrestre. La maggior parte dei satelliti per telecomunicazioni sfrutta questo tipo di orbita che però, data la grande distanza da Terra, soffre di una lunga latenza.
+					\end{itemize}
+					
+				\item{\bf ECCENTRICITÀ}	
+					\begin{itemize}
+						\item \textbf{Orbita circolare} : particolare caso dell'orbita ellittica, fanno parte di questo gruppo l'orbita GEO e l'orbita di trasferimento di Hoffman, usata per trasferire veicoli spaziali tra orbite diverse. In generale anche le orbite basse fanno parte di questa categoria, sempre con un certo grado di approssimazione.
+						\item \textbf{Orbite eccentriche} : alcuni esempi di tale tipo di orbite sono la \textit{Molnya orbit} e la \textit{Tundra orbit}, usate per sistemi di comunicazione e militari.
+						Importante notare come queste fruttino la seconda legge di Keplero per soffermarsi per più tempo possibile sopra una specifica zona terrestre. Infatti con una forte eccentricità si ha che il satellite trascorre la maggior parte del tempo nella zona più alta dell'orbita (Apogeo). 								
+					\end{itemize}
+					
+				\item{\bf INCLINAZIONE}	
+					\begin{itemize}
+						\item \textbf{Orbita polare} : con inclinazione prossima ai 90 gradi, passante quindi per i poli del pianeta.
+						\item \textbf{Polare sincrona solare} : permette di passare sopra l'equatore sempre alla stessa ora locale. Utile per sistemi di immagine satellitari.
+					\end{itemize}
+					
+				\item{\bf CORPO CENTRALE}	
+					\begin{itemize}
+						\item \textbf{Geocentrica} : orbitante attorno alla Terra.
+						\item \textbf{Eliocentrica} : orbitante attorno al Sole
+						\item \textbf{Aerocentrica} : orbitante attorno a Marte.
+					\end{itemize}
+				
+				
+				\item{\bf SINCRONIA}	
+					\begin{itemize}
+						\item \textbf{Sincrona} : avente periodo orbitale uguale al periodo di rotazione del corpo centrale. Le orbite GEO fanno parte di questo gruppo, detto \textit{Geosynchronous orbit} (GSO).
+						\item \textbf{Semi Sincrona} : avente periodo di rotazione pari alla metà del periodo di rotazione del corpo centrale. Ad esempio sistemi di localizzazione in MEO.
+					\end{itemize}
+			\end{itemize}								
 						
 			\subsection{Satelliti artificiali}
-			Per meglio comprendere il ruolo dei satelliti artificiali nella nostro contesto, verrà riportata una breve introduzione storica e tecnica sull'argomento. Ipotesi di un satellite posto in orbita dall'uomo sono state fatte a cominciare dall'inizio del ventesimo secolo, con congetture avveniristiche che potevano essere considerate deliranti all'epoca ma del tutto quotidiane nei tempi attuali. Konstantin Tsiolkovsky (1857–1935) nel 1903 pubblicò il primo trattato accademico sull'argomento, introducendo i concetti base di un razzo multistadio e calcolò i parametri base dell'orbita geostazionaria. Nel 1928 Herman Potočnik (1892–1929) espose l'idea di una stazione spaziale che permettesse la permanenza umana in orbita, motivando contesti applicativi di ricerca e militari. Introdusse inoltre l'idea di un satellite radio in orbita geostazionaria, ma l'intuizione finale di utilizzare questa posizione privilegiata per un ponte radio e comunicazione di massa va attribuita a Arthur C. Clarke (1917–2008) nel 1945. Il primo satellite artificiale è stato lo Sputnik, lanciato nel 1957, segnando l'inizio di un irrefrenabile sviluppo tecnologico del campo che ha portato a diverse e numerose applicazioni, anche del tutto differenti dall'ambito delle telecomunicazioni. In seguito un elenco degli attuali principali utilizzi.
+			Per meglio comprendere il ruolo dei satelliti artificiali nel nostro contesto, verrà riportata una breve introduzione storica e tecnica sull'argomento. L''ipotesi di un satellite posto in orbita dall'uomo sono state fatte a cominciare dall'inizio del ventesimo secolo, con congetture avveniristiche che potevano essere considerate deliranti all'epoca ma del tutto quotidiane nei tempi attuali. Konstantin Tsiolkovsky (1857–1935) nel 1903 pubblicò il primo trattato accademico sull'argomento, introducendo i concetti base di un razzo multistadio e calcolò i parametri base dell'orbita geostazionaria. Nel 1928 Herman Potočnik (1892–1929) espose l'idea di una stazione spaziale che permettesse la permanenza umana in orbita, motivando contesti applicativi di ricerca e militari. Introdusse inoltre l'idea di un satellite radio in orbita geostazionaria, ma l'intuizione finale di utilizzare questa posizione privilegiata per un ponte radio e comunicazione di massa va attribuita a Arthur C. Clarke (1917–2008) nel 1945. Il primo satellite artificiale è stato lo Sputnik, lanciato nel 1957, segnando l'inizio di un irrefrenabile sviluppo tecnologico del campo che ha portato a diverse e numerose applicazioni, anche del tutto differenti dall'ambito delle telecomunicazioni. In seguito un elenco degli attuali principali utilizzi.
 			\begin{itemize}
 				\item {\bf Ricerca}
 				
-				Per la ricerca un satellite artificiale costituisce un enorme valore per la sua posizione non paragonabile ad una osservatorio terrestre. L'atmosfera ad esempio costituisce una barriera impenetrabile a molte componenti elettromagnetiche di fondamentale importanza per la comprensione dell'universo. L'esempio classico per questa categoria è il telescopio spaziale Hubble, che produce strabilianti immagini dell'universo nel infrarosso, visibile e ultravioletto. La Stazione Spaziale Internazionale è un altro esempio di ricerca, anche se definibile maggiormente come appunto una stazione spaziale, intesa come avamposto abitato, oltre che un satellite artificiale nel senso stretto del termine.
+				Per la ricerca un satellite artificiale costituisce un enorme valore per la sua posizione non paragonabile ad una osservatorio terrestre. L'atmosfera ad esempio rappresenta una barriera impenetrabile a molte componenti elettromagnetiche di fondamentale importanza per la comprensione dell'universo. L'esempio classico per questa categoria è il telescopio spaziale Hubble, che produce strabilianti immagini dell'universo nell'infrarosso, visibile e ultravioletto. La Stazione Spaziale Internazionale è un altro esempio di ricerca, anche se definibile maggiormente come appunto una stazione spaziale intesa come avamposto abitato, oltre che un satellite artificiale nel senso stretto del termine.
 				
 				\item {\bf Comunicazioni}
 				
-				Il primo satellite adibito a questo scopo fu {\it Echo} 1 lanciato nel 1960, consisteva semplicemente in un pallone dalla superficie elettromagneticamente riflettente, era quindi un sistema completamente passivo. Si passò a satelliti attivi fin dagli immediati successori, {\it Realy 1} e {\it Telstar 1}, entrambi lanciati nel 1962, quando il primo permise la prima diretta attraverso l'Oceano Pacifico mentre il secondo attraverso l'Atlantico. Per il primo satellite geostazionario si deve aspettare però il 1964 con {\it Syncom 3}, disattivato nel 1969, dopo circa 40 di abbandono le perturbazioni orbitali hanno traslato la sua posizione di circa 8 gradi ovest. Alcune proposte commerciali saranno menzionate più avanti.
+				Il primo satellite adibito a questo scopo fu {\it Echo} 1 lanciato nel 1960, Consisteva semplicemente in un pallone dalla superficie elettromagneticamente riflettente, quindi un sistema completamente passivo. Si passò a satelliti attivi fin dagli immediati successori, {\it Realy 1} e {\it Telstar 1}, entrambi lanciati nel 1962: il primo permise la prima diretta attraverso l'Oceano Pacifico, mentre il secondo attraverso l'Oceano Atlantico. Per il primo satellite geostazionario si deve aspettare però il 1964 con {\it Syncom 3}, disattivato nel 1969. Interessante menzionare che dopo circa 40 di abbandono le perturbazioni orbitali hanno traslato la sua posizione di circa 8 gradi ovest, mostrando come siano necessarie continua correzioni orbitali per mantenere l'orbita prefissata.
 				
 				\item {\bf Meteorologia}
 				
-				Forniscono una continua fonte di informazioni in tempo reale di condizioni climatiche come copertura nuvolosa e temperature. Il primo satellite di questo tipo fu lanciato nel 1961, {\it Tiros 1}. Possono occupare tutti i tipi di orbita, in dipendenza dal tipo di missione. Recentemente la NASA ha posto DSCOVR, satellite di ricerca sui cambiamenti climatici, in orbita al punto lagrangiano L1, punto di equilibrio gravitazionale del sistema Terra - Sole.
+				Forniscono una continua fonte di informazioni in tempo reale di condizioni climatiche come copertura nuvolosa e temperature. Il primo satellite di questo tipo fu lanciato nel 1961, {\it Tiros 1}. Possono occupare tutti i tipi di orbita, in funzione del tipo di missione. Recentemente la NASA ha posto DSCOVR, satellite di ricerca sui cambiamenti climatici, in orbita al punto lagrangiano L1, punto di equilibrio gravitazionale del sistema Terra - Sole.
 				
 				\item {\bf Posizionamento}
 				
-				La necessità di un sistema di posizionamento globale è scaturita dall'ambito militare, in generale questi sistemi sono sotto il controllo governativo ma resi disponibili liberamente con caratteristiche tecniche limitate, come ad esempio precisione minore. Il primo sistema fu dichiarato operazionale nel 1962 con il lancio di {\it Transit 5A}, e usato attivamente fino al 1996, quando fu definitivamente sostituito dal più prestante sistema GPS, oggi anche integrato in molti dispositivi di comune utilizzo come gli smarthphone. Inizialmente sviluppato solamente dagli Stati Uniti, con il passare degli anni ogni grande potenza ha portato avanti il proprio sistema di posizionamento globale. Le costellazioni degli attuali sistemi lavorano su orbite polari MEO, con un periodo di circa 12 ore e sono composte da almeno 24 satelliti più altri di riserva. 
+				La necessità di un sistema di posizionamento globale è scaturita dall'ambito militare, in generale questi sistemi sono sotto il controllo governativo ma resi disponibili liberamente con caratteristiche tecniche limitate, come ad esempio precisione minore. Il primo sistema fu dichiarato operativo nel 1962 con il lancio di {\it Transit 5A}, e usato attivamente fino al 1996 quando fu definitivamente sostituito dal più prestante sistema GPS, oggi anche integrato in molti dispositivi di comune utilizzo come gli smartphone. Inizialmente sviluppato solamente dagli Stati Uniti, con il passare degli anni ogni grande potenza ha portato avanti il proprio sistema di posizionamento globale. Le costellazioni degli attuali sistemi lavorano su orbite polari MEO, con un periodo orbitale di circa 12 ore, e sono composte da almeno 24 satelliti più altri di riserva. 
 				
 				\item {\bf Militare}
 				
-				L'orbita offre un punto di osservazione sfruttato per operazioni di sorveglianza e raccolta informazioni. Questo settore ha avuto un grosso sviluppo durante la Guerra Fredda con la creazione di sistemi di rilevamento di lanci missilistici e raccolta fotografica del territorio nemico. Nonostante la maggior parte di queste infrastrutture non sono di dominio pubblico, questo settore ha portato grandi benefici nell'ambito civile, come la disponibilità di foto ad alta risoluzione del suolo e monitoraggio di disastri ambientali.
+				Lo spazio offre un punto di osservazione sfruttato per operazioni di sorveglianza e raccolta informazioni. Questo settore ha avuto un grosso sviluppo durante la Guerra Fredda con la creazione di sistemi di rilevamento di lanci missilistici e raccolta fotografica del territorio nemico. Nonostante la maggior parte di queste infrastrutture non sono di dominio pubblico, questo settore ha portato grandi benefici nell'ambito civile, come la disponibilità di foto ad alta risoluzione del suolo e monitoraggio di disastri ambientali.
 				
 			\end{itemize}
-			Un satellite per telecomunicazioni, il caso di nostro interesse, è di fatto una base ripetente che permette a una o più basi terrestri di scambiarsi informazione in varie forme. Una stazione di terra trasmette sul satellite alla frequenza di {\it UpLink}, questo riceve ed amplifica il segnale ritrasmettendolo alla frequenza di {\it DownLink} alle stazioni riceventi. Quindi i sistemi di telecomunicazione satellitare sono composti essenzialmente da un'infrastruttura terrestre e il satellite in orbita. L'infrastruttura comprende anche il centro di controllo del satellite, che si occupa di tracciamento, telemetria e controllo. Al contrario di quanto si possa pensare, il tracciamento è uno dei compiti essenziali nella gestione del satellite. Oltre ad essere necessaria per confermare la posizione corretta del satellite dopo il lancio e per permettere ad altri di puntare le proprie antenne, il tracciamento rimane una priorità costante durante tutta la vita operativa della sonda. Perturbazioni orbitali tendono a scostare il satellite dalla posizione ideale, rendendo anche necessarie periodiche accensioni dei motori di manovra per riposizionarsi correttamente. Inoltre in orbite basse (LEO) è costantemente necessario compensare l'attrito atmosferico che tende a rallentare l'oggetto e di conseguenza contribuire al suo decadimento orbitale. 
-			Mediamente un satellite commerciale in orbita alta ha un tempo di vita nell'ordine di una decina d'anni, mentre per uno in orbita bassa (LEO) questo tempo si dimezza. Con la principale limitazione costituita dalla quantità di propellente a disposizione per le manovre di correzione orbitale, in orbita bassa queste sono molto più frequenti per il costante decadimento menzionato precedentemente. Una volta che il satellite è o sta per essere inservibile, il suo destino dipende dall'orbita in cui è posizionato, in orbite basse decadrà nell'arco di pochi anni distruggendosi nell'atmosfera, in orbite alte invece tenderà a rimanere nel proprio assetto per l'eternità non essendo presente nessuna forza che lo rallenti verso la superficie. Generalmente e quando possibile, il satellite viene spostato in un'orbita cimitero, in modo da non interferire con futuri lanci in quella particolare zona. 
+			
+			Un satellite per telecomunicazioni, il caso di nostro interesse, è di fatto un nodo ripetitore che permette a una o più stazioni terrestri di scambiare informazione. Una stazione di terra trasmette sul satellite alla frequenza di {\it UpLink}, questo riceve ed amplifica il segnale ritrasmettendolo alla frequenza di {\it DownLink} alle stazioni riceventi. Quindi i sistemi di telecomunicazione satellitare sono composti essenzialmente da un'infrastruttura terrestre e il satellite in orbita. L'infrastruttura comprende anche il centro di controllo del satellite, che si occupa di tracciamento, telemetria e controllo. Al contrario di quanto si possa pensare, il tracciamento è uno dei compiti essenziali nella gestione del satellite. Oltre ad essere necessaria per confermare la posizione corretta del satellite dopo il lancio e per permettere il corretto puntamento delle antenne, il tracciamento rimane una priorità costante durante tutta la vita operativa della sonda. Perturbazioni orbitali tendono a scostare il satellite dalla posizione ideale, rendendo anche necessarie periodiche accensioni dei motori di manovra per riposizionarlo. Inoltre, in orbite basse (LEO), è costantemente necessario compensare l'attrito atmosferico che tende a rallentare l'oggetto e di conseguenza contribuire al suo decadimento orbitale. 
+			Mediamente, un satellite commerciale in orbita alta, cioè oltre LEO, ha un tempo di vita nell'ordine di una decina d'anni, mentre per uno in orbita bassa (LEO) questo tempo è dimezzato. Con la principale limitazione costituita dalla quantità di propellente a disposizione per le manovre di correzione orbitale e in orbita bassa queste sono molto più frequenti per il costante decadimento menzionato precedentemente. Una volta che il satellite è o sta per essere inservibile, il suo destino dipende dall'orbita in cui è posizionato: in orbite basse decadrà nell'arco di pochi anni distruggendosi nell'atmosfera, in orbite alte invece tenderà a rimanere nel proprio assetto non essendo presente nessuna forza che lo rallenti verso la superficie. Generalmente e quando possibile, il satellite viene spostato in un'orbita cimitero, in modo da non interferire con futuri lanci in quella particolare zona. 
 			
 			%%Elementi costituenti di un satellite
 			
 			Le comunicazioni satellitari hanno grande vantaggio su grandi distanze, essendo insensibili alla degradazione tipica di ponti radio ad alta frequenza a causa dell'atmosfera e alla dispersione che avviene su cavi.
-			I principali {\bf vantaggi} sono sintetizzati a seguito. 
+			I principali {\bf vantaggi} sono: 
 			\begin{itemize}
-				\item Copertura globale, possibile cioè portare servizi di alta qualità in ogni angolo del pianeta tramite una costellazione satellitare. 
-				\item Capacità, intesa come numero di comunicazioni contemporanee.
-				\item Affidabilità, essendo costantemente attivo anche quando le infrastrutture terrestri collassano.
-				\item Sicurezza, essendo già di per sé una rete privata, aggiungendo protocolli di sicurezza è possibile ottenere robustezza maggiore dei collegamenti terrestri.
-				\item Scalabilità, perché aggiungere una nuova rete a quella esistente diventa immediato, anche in zone rurali, semplicemente allocando la banda richiesta e installando l'attrezzatura necessaria in loco.
-				\item Dispiegamento rapido, al contrario di un'infrastruttura terrestre, il satellite può essere operativo in tempi relativamente rapidi.				
-				\item Costi, pur essendo piuttosto elevato l'investimento iniziale della progettazione e costruzione di satelliti, questo si diluisce in un tempo lungo e permette di evitare costi ancora più proibitivi di costruzione e mantenimento di infrastrutture terrestri in ambienti ostili.				
+				\item Copertura globale: è possibile cioè portare servizi di alta qualità in ogni angolo del pianeta tramite una costellazione satellitare. 
+				\item Capacità: intesa come numero di comunicazioni contemporanee.
+				\item Affidabilità: essendo costantemente attivo anche quando le infrastrutture terrestri collassano.
+				\item Sicurezza: essendo già di per sé una rete privata, aggiungendo protocolli di sicurezza è possibile ottenere robustezza maggiore dei collegamenti terrestri.
+				\item Scalabilità: aggiungere una nuova rete a quella esistente diventa immediato, anche in zone rurali, semplicemente allocando la banda richiesta e installando l'attrezzatura necessaria in loco.
+				\item Dispiegamento rapido: al contrario di un'infrastruttura terrestre, il satellite può essere operativo in tempi relativamente rapidi.				
+				\item Costi: pur essendo piuttosto elevato l'investimento iniziale della progettazione e costruzione di satelliti, questo si diluisce in un tempo lungo e permette di evitare costi ancora più proibitivi di costruzione e mantenimento di infrastrutture terrestri in ambienti ostili.				
 			\end{itemize} 
 		
-			I principali {\bf svantaggi} invece sono costituiti dai vincoli dimensionali che impongono di conseguenza limitazioni sulla potenza di trasmissione e sui guadagni delle antenne.	Entrambi i fattori dipendono dai parametri orbitali e sull'investimento monetario. 
+			I principali {\bf svantaggi} invece sono costituiti dai vincoli dimensionali e di peso che impongono limitazioni sull'\textit{hardaware} utilizzabile e di conseguenza sull'energia disponibile, sulla potenza di trasmissione, sui guadagni delle antenne e sulla capacità di calcolo disponibile. Tali fattori dipendono dai parametri orbitali e sull'investimento monetario che si è disposti a sostenere. 
 			\begin{itemize}
-				\item Potenza. L'unica fonte di energia disponibile a bordo di un satellite sono generalmente i pannelli solari. Durante la guerra fredda era tipico avere anche satelliti ad energia nucleare con a bordo un generatore a radioisotopi, ma, oltre al costo elevato, era presente un alto rischio di contaminazione in caso di lancio fallimentare e nel rientro atmosferico a fine vita operativa.
+				\item Potenza: l'unica fonte di energia disponibile a bordo di un satellite sono generalmente i pannelli solari. Durante la guerra fredda era tipico avere anche satelliti ad energia nucleare con a bordo un generatore a radioisotopi, ma, oltre al costo elevato, era presente un alto rischio di contaminazione in caso di lancio fallimentare e nel rientro atmosferico a fine vita operativa.
 				La bassa potenza disponibile a bordo è il principale collo di bottiglia per la potenza trasmissiva e quindi la qualità del segnale ricevuto sulla superficie. 
-				\item Sensibilità in ricezione. Quest'ultima è limitata dalle dimensioni fisiche dell'apparato ricevente, che deve essere contenuto in ordine di rientrare nelle specifiche di lancio. A terra sono quindi necessarie strutture imponenti e grandi potenze per compensare questa mancanza. 
-				\item Disponibilità. Fatta eccezione per i satelliti in orbita geosincrona, che rimangono il caso preferito in quanto sempre visibili da una determinata zona, il restante numero di satelliti pianifica le comunicazioni su base temporale per ogni zona d'interesse, specificando durata e qualità del contatto, essendo questi predicibili deterministicamente.
-				 
+				\item Sensibilità in ricezione: è limitata dalle dimensioni fisiche dell'apparato ricevente, che devono essere contenute in modo da rientrare nelle specifiche di lancio. A terra sono quindi necessarie strutture imponenti e grandi potenze per compensare questa mancanza. 
+				\item Disponibilità: fatta eccezione per i satelliti in orbita geosincrona, il restante numero di satelliti pianifica le comunicazioni su base temporale per ogni zona d'interesse, specificando durata e qualità del contatto, essendo questi predicibili deterministicamente.			
 			\end{itemize}
 			
 			
 		
 		\section{Architettura di rete}	
 		
-		La rete proposta è un complesso costituito da un gruppo eterogeneo di nodi DTN, ciascuno avente un preciso ruolo e posizione nello scambio di dati. Questa rete è un'evoluzione diretta di quella proposta in (Inserire reference al papiro). Lo scheletro è composto da una costellazione di nanosatelliti con caratteristiche descritte nel capitolo precedente, corredato da due tipologie di stazioni terrestri adibite alla comunicazione satellitare. 
+		La rete proposta è costituita da un gruppo eterogeneo di nodi DTN, ciascuno avente un ruolo preciso nello scambio di dati tra zone rurali e Internet. Lo scheletro è composto da una costellazione di nanosatelliti con caratteristiche descritte nel capitolo \ref{nostrCostell}, corredato da due tipologie di stazioni terrestri adibite alla comunicazione satellitare. 
 		
-		Lo scenario di riferimento è basato sulle seguenti tipologie di nodi, disposti secondo l'ordine di invio verso gli utenti finali:
+		Lo scenario di riferimento illustrato in figura XXX è basato sulle seguenti tipologie di nodi, disposti secondo l'ordine di invio verso gli utenti rurali:
 		\begin{itemize}
 			\item {\bf Central Node, CN}
 			
-			Questo nodo svolge la funzione di controllore della rete, gestendo le richieste e i instradando flussi di traffico. Si occupa inoltre dell'interfaccia tra la rete DTN e la rete Internet convenzionale.
+			Questo nodo svolge la funzione di controllore della rete, gestendo le richieste e instradando i flussi di traffico. Si occupa inoltre dell'interfaccia tra la rete DTN e la rete Internet convenzionale.
 			
 			\item {\bf HotSpots, HS}
 			
-			Gli HotSpots sono le basi di comunicazione satellitare connesse al Central Node. Dispongono quindi di un collegamento radio adibito alla comunicazione con i nanosatelliti e di un collegamento cablato con il CN, quest'ultimo potrebbe essere attuato anche attraverso la rete Internet convenzionale. 
+			Gli HotSpots sono le stazioni a terra connesse al Central Node. Dispongono quindi di un collegamento radio adibito alla comunicazione con i nanosatelliti e di un collegamento cablato con il CN, Quest'ultimo potrebbe essere attuato anche attraverso la rete Internet convenzionale. 
 			
 			\item {\bf NanoSatellites, NS}
 			
-			I nanosatelliti attuano la parte di trasporto vera e propria dell'informazione, assumendo il ruolo di muletto dei dati caricando e scaricando dati alle stazioni di terra.
+			I nanosatelliti si occupano del trasporto dell'informazione dalle zone rurali alla porzione connessa a Internet e viceversa, memorizzando i dati al loro interno in attesa di entrare in contatto con le stazioni di terra.
 			
 			\item {\bf ColdSpots, CS}
 			
-			I CS sono l'analogo degli HS per le zone rurali. Sono localizzati in zone strategiche nelle prossimità degli utenti finali, e sono collegati con essi tramite una rete locale su cui non ci sono particolari vincoli. Infine è presente l'interfaccia radio per la comunicazione satellitare.
+			I CS sono l'analogo degli HS per le zone rurali. Sono localizzati in zone strategiche in prossimità degli utenti finali, e sono collegati con essi tramite una rete locale cablata o wireless. Infine è presente l'interfaccia radio per la comunicazione satellitare.
 			
 			\item {\bf Rural Nodes, RN}
 			
-			Sono i veri e propri utenti di questa rete. I nodi rurali sono un generici dispositivi a cui siamo avvezzi nella nostra quotidianità, come PC, smarthphone e tablet. Questi nodi creano le richieste e ricevono le risposte, sono quindi i nodi finali.  
+			Sono i veri e propri utenti di questa rete. I nodi rurali sono costituiti da generici dispositivi a cui siamo avvezzi nella nostra quotidianità, come PC, smartphone e tablet. Questi nodi creano le richieste e ricevono le risposte, sono quindi i nodi finali.  
 						
 		\end{itemize}
 		
@@ -345,7 +356,7 @@
 		
 		Riassumendo quindi l'uso di nanosatelliti permetterebbe di evitare tutti gli svantaggi di una rete terrestre pur essendo più economica di una rete satellitare GEO o LEO. 
 		
-		\subsection{La nostra costellazione}
+		\subsection{La nostra costellazione} \label{nostrCostell}
 		La costellazione di satelliti scelta per questo lavoro è in orbita LEO, che a confronto con un'orbita GEO offre il vantaggio di investimenti iniziali e latenze minori, ma ha il principale svantaggio che i satelliti sono in costante movimento rispetto alla superficie e quindi l'apparato di terra deve essere in grado di orientare l'antenna per rimanere agganciato al segnale. Come detto in precedenza, questa configurazione non permette, in termini di qualità del segnale, prestazioni ottimali in generale o comunque per tutta la durata del contatto. Inoltre un singolo satellite in orbita GEO costituisce un punto di criticità in caso di malfunzionamento rispetto ad una costellazione sparsa in orbita LEO. Questi compromessi però sono tutti a vantaggio del requisito principale di questo lavoro, ridurre i costi d'investimento per la creazione di una rete DTN in grado di estendere la copertura Internet a zone rurali. Una costellazione in orbita GEO rimane preferita in ambito di telecomunicazioni, ma comporta costi estremamente elevati. Sempre in quest'ottica è stata fatta la scelta del tipo di satellite, il nanosatellite.
 		
 		I nanosatelliti sono una realtà piuttosto recente, spesso utilizzati come piattaforme di test per nuove tecnologie o come piattaforma orbitale congiunta di università per esperimenti o dimostrazioni. Le loro peculiarità sono le dimensioni estremamente ridotte e standardizzate, nell'ordine delle decine di centimetri per lato, e il basso costo di progettazione, produzione e mantenimento. Eliminando completamente caratteristiche come un propulsore, pannelli solari orientabili, antenne ad alto guadagno, sistemi ridondanti, ecc... si possono ridurre notevolmente dimensioni e costi. In particolare i costi di messa in orbita sono notevolmente abbattuti in quanto possono essere aggregati ad altri lanci come carichi secondari. Infine alcuni sono lanciati insieme al rifornimento periodico alla Stazione Spaziale Internazionale (ISS) e da essa catapultati in orbita tramite un apposito lanciatore. 
