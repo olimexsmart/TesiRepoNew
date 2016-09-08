@@ -38,11 +38,18 @@
 	\clearpage
 	
 	\chapter*{Ringraziamenti}	
-	
+	\textit{Ai miei nonni e ai miei genitori che mi hanno sempre sostenuto.}
 	\clearpage
 	
 	\chapter*{Estratto}
+	{ \it Il presente lavoro si pone in una ricerca con lo scopo di fornire connettività Internet a basso costo per zone rurali irraggiungibili da connessioni convenzionali.
 	
+	L'architettura proposta si basa sul concetto di rete DTN, cioè tollerante ai ritardi e alle disconnessioni, applicato ad uno scenario di comunicazione satellitare. I satelliti in questione fanno parte di una realtà recente nel campo, i nanosatelliti, che promettono il vantaggio di costi di progettazione e dispiegamento contenuti.
+	
+	La natura deterministica del movimento dei satelliti ci porta a conoscere la disposizione dei nodi della rete in istanti futuri, permettendo la conoscenza a priori dei possibili contatti.
+	Basandosi su questi dati questo lavoro propone un algoritmo di routing in grado di produrre un percorso per i dati direttamente alla sorgente. Questo algoritmo è chiamato SCGR (Source Contact Graph Routing) e deriva dal CGR proposto dalla NASA.
+	
+	Tramite il simulatore di reti ns-3 è stato possibile confermare la validità di questa proposta.}
 	\clearpage
 	
 	\tableofcontents
@@ -63,7 +70,15 @@
 		
 		\section{Limitazioni dei protocolli convenzionali in condizioni estreme} \label{limProt}
 		
-		Per meglio comprendere le limitazioni che i protocolli standard di Internet hanno in condizioni di rete precarie verrà proposto un esempio. Consideriamo uno scenario composto da un centro di ricerca, un complesso di antenne e un satellite in orbita attorno a Marte. La situazione è schematizzata in figura (ref to im). 
+		Per meglio comprendere le limitazioni che i protocolli standard di Internet hanno in condizioni di rete precarie verrà proposto un esempio. Consideriamo uno scenario composto da un centro di ricerca, un complesso di antenne e un satellite in orbita attorno a Marte. La situazione è schematizzata in figura \ref{fig:scenariomars}. 
+		
+		\begin{figure}[h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[scale = 0.5]{./img/scenariouse}
+			\caption{Scenario di collegamento tra un laboratorio terrestre e una stazione meteorologica su Marte.}
+			\label{fig:scenariomars}
+		\end{figure}
 		
 		Il percorso che divide il laboratorio dalle antenne per lo spazio profondo è una rete Internet convenzionale, caratterizzata da:
 		\begin{itemize}
@@ -77,12 +92,21 @@
 		
 		Analizzando invece il secondo tratto di comunicazione, tra il complesso di antenne e l'orbiter attorno a Marte, ci accorgiamo che la situazione è ben diversa:
 		\begin{itemize}
-			\item lunghe latenze di propagazione, nell'ordine di minuti;
+			\item lunghe latenze di propagazione, nell'ordine di minuti (figura \ref{fig:rtt});
 			\item basse velocità, tipicamente qualche decina di Kb/s;
 			\item interruzioni a causa di interferenze;
 			\item connessione deterministicamente intermittente;
 		\end{itemize}
-		Le lunghe latenze rendono inutilizzabile il meccanismo di ritrasmissione del TCP eccedendo abbondantemente i timeout propri del protocollo. Inoltre il meccanismo di handshake a tre stadi si protrarrebbe fino ad occupare gran parte dell'opportunità di contatto. Protocolli alternativi al TCP sono l'UDP, che però non offre meccanismi di ritrasmissione, e altri più esotici che comunque non produrrebbero risultati soddisfacenti per le stesse ragioni del TCP.
+		
+		\begin{figure}[h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[scale = 0.5]{./img/rtt}
+			\caption{Latenze di sola andata espresse in scala logaritmica.}
+			\label{fig:rtt}
+		\end{figure}
+		
+		Le lunghe latenze (figura \ref{fig:rtt}) rendono inutilizzabile il meccanismo di ritrasmissione del TCP eccedendo abbondantemente i timeout propri del protocollo. Inoltre il meccanismo di handshake a tre stadi si protrarrebbe fino ad occupare gran parte dell'opportunità di contatto. Protocolli alternativi al TCP sono l'UDP, che però non offre meccanismi di ritrasmissione, e altri più esotici che comunque non produrrebbero risultati soddisfacenti per le stesse ragioni del TCP.
 		
 		Risulta quindi che non è possibile usare lo stesso stack di protocolli su tutti i nodi della rete, pur rimanendo nella necessità di avere un meccanismo di ritrasmissione automatico (ARQ). 
 
@@ -91,9 +115,17 @@
 		
 		\section{Architettura DTN}		
 		
-		L'archittettura DTN, raffigurata in figura (INSERISCI) è basata sull'introduzione di un nuovo strato protocollare a livello di trasporto o anche a livelli più bassi chiamato Bundle Protocol (BP). Il punto essenziale è dotare i nodi della capacità di gestire ritardi e disconnessioni, permettendo di memorizzare i dati localmente in attesa dell'opportunità per inoltrarli al prossimo nodo e di garantire una comunicazione attraverso reti eterogenee, cioè basate su differenti protocolli e tecnologie. 
+		L'archittettura DTN, raffigurata in figura \ref{fig:architettura} è basata sull'introduzione di un nuovo strato protocollare a livello di trasporto o anche a livelli più bassi chiamato Bundle Protocol (BP). Il punto essenziale è dotare i nodi della capacità di gestire ritardi e disconnessioni, permettendo di memorizzare i dati localmente in attesa dell'opportunità per inoltrarli al prossimo nodo e di garantire una comunicazione attraverso reti eterogenee, cioè basate su differenti protocolli e tecnologie. 
 		
-		Il Bundle Protocol è in grado di interfacciarsi con i livelli inferiori, generalmente di trasporto, per mezzo di Convergence Layer Adapters (CLAs). Nel tempo sono stati definiti vari CLA, a cominciare sia dai protocolli di trasporto più comuni come TCP e UDP, che più specifici, come il Licklider Transmossion Protocol (LTP) \cite{ramadas2008rfc}, passando poi anche nella seconda versione (DTN2) a protocolli di livello datalink come Bluetooth ed Ethernet. 
+		\begin{figure}[h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[scale = 0.5]{./img/architettura}
+			\caption{Architettura e stack DTN.}
+			\label{fig:architettura}
+		\end{figure}
+				
+		Il Bundle Protocol è in grado di interfacciarsi con i livelli inferiori, generalmente di trasporto, per mezzo di Convergence Layer Adapters (CLAs). Nel tempo sono stati definiti vari CLA, a cominciare sia dai protocolli di trasporto più comuni come TCP\cite{demmer2014delay} e UDP\cite{kruse2008udp}, che più specifici, come il Licklider Transmossion Protocol (LTP) \cite{ramadas2008rfc}\cite{burleigh2013delay}, passando poi anche nella seconda versione\cite{delay2012dtn2} (DTN2) a protocolli di livello datalink come Bluetooth ed Ethernet. 
 		In combinazione con il BP, ogni nodo può utilizzare il CLA più adatto per l'inoltro successivo. 
 		
 		L'uso del Bundle Protocol è guidato da alcuni principi di design a livello applicativo che contribuiscono ad ottenere migliori risultati:
@@ -124,14 +156,37 @@
 		\section{DTN come evoluzione del TCP splitting}
 		L'accesso a Internet tramite TCP/IP ha portato allo sviluppo dei PEP e in generale di {\it protocol boosters } per adattare questo stack in reti eterogenee. Il loro ruolo modifica attivamente il flusso sorgente-destinazione per adattare ai nodi TCP/IP i tratti con prestazioni povere, di fatto inducendoli a credere di avere a che fare con connessioni a prestazioni migliori. Gli esempi proposti saranno incentrati sulla comunicazione satellitare, essendo questa uno scenario di tipico utilizzo dei PEP. Il link satellitare infatti presenta forti latenze e altre peculiarità che rendono necessari protocolli specializzati come LTP. I PEP o alternativamente le DTN si occupano di spezzare la connessione a livello di trasporto.
 		%non ho capito un accidente dei principi di fate sharing
+		\begin{figure}[h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[scale = 0.7]{./img/peptypes}
+			\caption{Confronto tra le architetture PEP e DTN. (a) PEP distribuiti; (b) PEP integrati; (c) rete DTN.}
+			\label{fig:pep}
+		\end{figure}		
 		
-		Principalmente sono possibili due configurazioni diverse di PEP: distribuiti ed integrati. I primi sono presenti da entrambi i lati del link satellitare, i secondi invece solo da un lato. 
+		Principalmente sono possibili due configurazioni diverse di PEP (figura \ref{fig:pep}): distribuiti ed integrati. I primi sono presenti da entrambi i lati del link satellitare, i secondi invece solo da un lato. 
 		%Immagine presa dal vostro paper al riguardo
-		La tipologia più comune di PEP effettua il TCP splitting, dividendo la connessione a livello di trasporto in due parti. Nei PEP distribuiti quindi si hanno tre connessioni diverse, dove la prima e l'ultima generalmente utilizzano TCP standard, mentre la seconda sul link satellitare un differente protocollo.
-		Il corrispondente DTN è simile a quest'ultima configurazione.
-		Nei PEP integrati invece la connessione è spezzata in sole due parti, la prima con su rete cablata con TCP convenzionale e la seconda con un protocollo specializzato ma comunque compatibile con il TCP standard.
+		La tipologia più comune di PEP effettua il TCP splitting\cite{caini2007pepsal}, dividendo la connessione a livello di trasporto in due parti. Nei PEP distribuiti quindi si hanno tre connessioni diverse, dove la prima e l'ultima generalmente utilizzano TCP standard, mentre la seconda sul link satellitare un differente protocollo.
+		Il corrispondente DTN è simile a quest'ultima configurazione (Figura \ref{fig:clastack}).
+		Nei PEP integrati invece la connessione è spezzata in sole due parti, la prima con su rete cablata con TCP convenzionale e la seconda con un protocollo specializzato ma comunque compatibile con il TCP standard (Figura \ref{fig:pepstack}).
 		%Immagine con i due differenti stack
-		
+		\begin{figure}[h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[scale = 0.45]{./img/pep}
+			\caption{Stack protocollare PEP integrato.}
+			\label{fig:pepstack}
+		\end{figure}			
+
+		\begin{figure}[h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[scale = 0.45]{./img/cla}
+			\caption{Stack protocollare DTN.}
+			\label{fig:clastack}
+		\end{figure}			
+
+				
 		Riassumendo, le principali similarità e differenze sono:
 		\begin{itemize}
 			\item entrambi hanno due connessioni a livello di trasporto, una cablata e l'altra satellitare;
@@ -140,7 +195,7 @@
 			\item il TCP splitting viola il principio di connessione end to end, perché i PEP agiscono sia al livello applicativo che di trasporto. Nelle DTN questo problema è superato perché il ruolo del TCP è ridefinito: ogni hop DTN è una connessione a sé stante.
  		\end{itemize}
 		
-		
+
 	
 	\chapter{Nanosatellite DTN Network}
 		
@@ -216,7 +271,19 @@
 			\end{itemize}								
 						
 			\subsection{Satelliti artificiali}
-			Per meglio comprendere il ruolo dei satelliti artificiali nel nostro contesto, verrà riportata una breve introduzione storica e tecnica sull'argomento. L''ipotesi di un satellite posto in orbita dall'uomo sono state fatte a cominciare dall'inizio del ventesimo secolo, con congetture avveniristiche che potevano essere considerate deliranti all'epoca ma del tutto quotidiane nei tempi attuali. Konstantin Tsiolkovsky (1857–1935) nel 1903 pubblicò il primo trattato accademico sull'argomento, introducendo i concetti base di un razzo multistadio e calcolò i parametri base dell'orbita geostazionaria. Nel 1928 Herman Potočnik (1892–1929) espose l'idea di una stazione spaziale che permettesse la permanenza umana in orbita, motivando contesti applicativi di ricerca e militari. Introdusse inoltre l'idea di un satellite radio in orbita geostazionaria, ma l'intuizione finale di utilizzare questa posizione privilegiata per un ponte radio e comunicazione di massa va attribuita a Arthur C. Clarke (1917–2008) nel 1945. Il primo satellite artificiale è stato lo Sputnik, lanciato nel 1957, segnando l'inizio di un irrefrenabile sviluppo tecnologico del campo che ha portato a diverse e numerose applicazioni, anche del tutto differenti dall'ambito delle telecomunicazioni. In seguito un elenco degli attuali principali utilizzi.
+			Per meglio comprendere il ruolo dei satelliti artificiali nel nostro contesto, verrà riportata una breve introduzione storica e tecnica sull'argomento. L''ipotesi di un satellite posto in orbita dall'uomo sono state fatte a cominciare dall'inizio del ventesimo secolo, con congetture avveniristiche che potevano essere considerate deliranti all'epoca ma del tutto quotidiane nei tempi attuali. Konstantin Tsiolkovsky (1857–1935) nel 1903 pubblicò il primo trattato accademico sull'argomento, introducendo i concetti base di un razzo multistadio e calcolò i parametri base dell'orbita geostazionaria. 
+			\begin{figure}[h]
+				\centering
+				%\vspace{-20pt}
+				\includegraphics[scale = 0.5]{./img/potocnik}
+				\caption{Da sinistra verso destra: Herman Potočnik (1892–1929), schemi orbita geostazionaria e stazione orbitale, la pubblicazione dove espose le sue idee..}
+				\label{fig:poto}
+			\end{figure}			
+			
+			Nel 1928 Herman Potočnik (1892–1929) espose l'idea di una stazione spaziale che permettesse la permanenza umana in orbita, motivando contesti applicativi di ricerca e militari (Figura \ref{fig:poto}). Introdusse inoltre l'idea di un satellite radio in orbita geostazionaria, ma l'intuizione finale di utilizzare questa posizione privilegiata per un ponte radio e comunicazione di massa va attribuita a Arthur C. Clarke (1917–2008) nel 1945. Il primo satellite artificiale è stato lo Sputnik, lanciato nel 1957, segnando l'inizio di un irrefrenabile sviluppo tecnologico del campo che ha portato a diverse e numerose applicazioni, anche del tutto differenti dall'ambito delle telecomunicazioni. 
+			
+			In seguito un elenco degli attuali principali utilizzi.
+			
 			\begin{itemize}
 				\item {\bf Ricerca}
 				
@@ -243,8 +310,6 @@
 			Un satellite per telecomunicazioni, il caso di nostro interesse, è di fatto un nodo ripetitore che permette a una o più stazioni terrestri di scambiare informazione. Una stazione di terra trasmette sul satellite alla frequenza di {\it UpLink}, questo riceve ed amplifica il segnale ritrasmettendolo alla frequenza di {\it DownLink} alle stazioni riceventi. Quindi i sistemi di telecomunicazione satellitare sono composti essenzialmente da un'infrastruttura terrestre e il satellite in orbita. L'infrastruttura comprende anche il centro di controllo del satellite, che si occupa di tracciamento, telemetria e controllo. Al contrario di quanto si possa pensare, il tracciamento è uno dei compiti essenziali nella gestione del satellite. Oltre ad essere necessaria per confermare la posizione corretta del satellite dopo il lancio e per permettere il corretto puntamento delle antenne, il tracciamento rimane una priorità costante durante tutta la vita operativa della sonda. Perturbazioni orbitali tendono a scostare il satellite dalla posizione ideale, rendendo anche necessarie periodiche accensioni dei motori di manovra per riposizionarlo. Inoltre, in orbite basse (LEO), è costantemente necessario compensare l'attrito atmosferico che tende a rallentare l'oggetto e di conseguenza contribuire al suo decadimento orbitale. 
 			Mediamente, un satellite commerciale in orbita alta, cioè oltre LEO, ha un tempo di vita nell'ordine di una decina d'anni, mentre per uno in orbita bassa (LEO) questo tempo è dimezzato. Con la principale limitazione costituita dalla quantità di propellente a disposizione per le manovre di correzione orbitale e in orbita bassa queste sono molto più frequenti per il costante decadimento menzionato precedentemente. Una volta che il satellite è o sta per essere inservibile, il suo destino dipende dall'orbita in cui è posizionato: in orbite basse decadrà nell'arco di pochi anni distruggendosi nell'atmosfera, in orbite alte invece tenderà a rimanere nel proprio assetto non essendo presente nessuna forza che lo rallenti verso la superficie. Generalmente e quando possibile, il satellite viene spostato in un'orbita cimitero, in modo da non interferire con futuri lanci in quella particolare zona. 
 			
-			%%Elementi costituenti di un satellite
-			
 			Le comunicazioni satellitari hanno grande vantaggio su grandi distanze, essendo insensibili alla degradazione tipica di ponti radio ad alta frequenza a causa dell'atmosfera e alla dispersione che avviene su cavi.
 			I principali {\bf vantaggi} sono: 
 			\begin{itemize}
@@ -270,8 +335,16 @@
 		\section{Architettura di rete}	\label{archRete}
 		
 		La rete proposta è costituita da un gruppo eterogeneo di nodi DTN, ciascuno avente un ruolo preciso nello scambio di dati tra zone rurali e Internet. Lo scheletro è composto da una costellazione di nanosatelliti con caratteristiche descritte nel capitolo \ref{nostrCostell}, corredato da due tipologie di stazioni terrestri adibite alla comunicazione satellitare. 
+		\begin{figure}[h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[clip=true, trim = 10 5 0 0, scale = 0.5]{./img/dtnscen}
+			\caption{Proiezione bidimensionale dell'architettura proposta.}
+			\label{fig:dtnscen}
+		\end{figure}		
 		
-		Lo scenario di riferimento illustrato in figura XXX è basato sulle seguenti tipologie di nodi, disposti secondo l'ordine di invio verso gli utenti rurali:
+		Lo scenario di riferimento illustrato in figura \ref{fig:dtnscen} è basato sulle seguenti tipologie di nodi, disposti secondo l'ordine di invio verso gli utenti rurali:
+		
 		\begin{itemize}
 			\item {\bf Central Node, CN}
 			
@@ -297,8 +370,15 @@
 		
 		Ora che sono stati esposti i vari costituenti della rete, è possibile esporre come una tipica comunicazione avviene in questo contesto, focalizzandosi sugli aspetti relativi alla natura DTN. 
 		
-		I nodi rurali sono composti da normali utenti che sono interessati ad usufruire di servizi base come la consultazione della propria posta o la visualizzazione di pagine web. Un esempio applicativo è riportato in figura XXX La loro interfaccia con la rete Internet è costituita dal ColdSpot locale. Le richieste vengono inoltrate ad esso e da qui in poi entra in gioco il paradigma DTN. Non esistendo una connessione diretta e stabile con la destinazione il CS trattiene la richiesta dell'utente ed elabora una risposta che emula il comportamento del server a cui l'utente rurale dovrebbe essere connesso, in modo da soddisfare i criteri di timeout tipici di una rete Internet. In questo modo il terminale dell'utente è portato a comportarsi normalmente come se fosse realmente connesso alla destinazione richiesta. Intanto il CS incapsula i dati da inviare in un Bundle DTN e calcola il miglior modo per recapitare i dati ad un HS. Dettagli riguardo a come questa scelta è elaborata saranno investigati nel capitolo \ref{algritmInstrad}. Quindi la richiesta è trattenuta al CS fino all'opportunità di contatto con il nanosatellite prescelto. Una volta che il Bundle DTN in questione raggiunge un HS, da qui è immediatamente inoltrato al nodo centrale, che si occupa di recuperare i dati della richiesta come provenisse da un generico utente su Internet. Segue quindi l'iter standard di un nodo Internet alle prese con il recuperare una pagina web, interrogando prima il DNS, instanziando tutte le connessioni del caso, infine recuperando i dati richiesti. A questo punto è necessario affrontare il percorso verso il nodo rurale e, nuovamente, le scelte di instradamento del dato saranno oggetto del capitolo \ref{algritmInstrad}. I dati recuperati verranno mandati ad un HotSpot il quale, analogamente al ColdSpot in fase di richiesta, tratterà il tutto fino a quando il nanosatellite voluto non entrerà in contatto. Il pacchetto DTN a quel punto sarà caricato sul NS e trasportato lungo l'orbita, dove potrà attraversare, qualora sia opportuno e vantaggioso farlo, un numero indefinito di link tra NS che entrano in contatto tra di loro sempre seguendo una logica di instradamento ben precisa. Infine l'informazione verrà inviata a terra al CS in ricezione della zona rurale di partenza il quale si occuperà di instradarla al nodo di partenza, finalizzando la connessione.
-		%%inserire grafico di comunicazione
+		I nodi rurali sono composti da normali utenti che sono interessati ad usufruire di servizi base come la consultazione della propria posta o la visualizzazione di pagine web. Un esempio applicativo è riportato in figura \ref{fig:dnscom} La loro interfaccia con la rete Internet è costituita dal ColdSpot locale. Le richieste vengono inoltrate ad esso e da qui in poi entra in gioco il paradigma DTN. Non esistendo una connessione diretta e stabile con la destinazione il CS trattiene la richiesta dell'utente ed elabora una risposta che emula il comportamento del server a cui l'utente rurale dovrebbe essere connesso, in modo da soddisfare i criteri di timeout tipici di una rete Internet. In questo modo il terminale dell'utente è portato a comportarsi normalmente come se fosse realmente connesso alla destinazione richiesta. Intanto il CS incapsula i dati da inviare in un Bundle DTN e calcola il miglior modo per recapitare i dati ad un HS. Dettagli riguardo a come questa scelta è elaborata saranno investigati nel capitolo \ref{algritmInstrad}. Quindi la richiesta è trattenuta al CS fino all'opportunità di contatto con il nanosatellite prescelto. Una volta che il Bundle DTN in questione raggiunge un HS, da qui è immediatamente inoltrato al nodo centrale, che si occupa di recuperare i dati della richiesta come provenisse da un generico utente su Internet. Segue quindi l'iter standard di un nodo Internet alle prese con il recuperare una pagina web, interrogando prima il DNS, instanziando tutte le connessioni del caso, infine recuperando i dati richiesti. A questo punto è necessario affrontare il percorso verso il nodo rurale e, nuovamente, le scelte di instradamento del dato saranno oggetto del capitolo \ref{algritmInstrad}. I dati recuperati verranno mandati ad un HotSpot il quale, analogamente al ColdSpot in fase di richiesta, tratterà il tutto fino a quando il nanosatellite voluto non entrerà in contatto. Il pacchetto DTN a quel punto sarà caricato sul NS e trasportato lungo l'orbita, dove potrà attraversare, qualora sia opportuno e vantaggioso farlo, un numero indefinito di link tra NS che entrano in contatto tra di loro sempre seguendo una logica di instradamento ben precisa. Infine l'informazione verrà inviata a terra al CS in ricezione della zona rurale di partenza il quale si occuperà di instradarla al nodo di partenza, finalizzando la connessione.
+		
+		\begin{figure}[h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[scale = 0.45]{./img/dnscom}
+			\caption{Flusso di traffico durante la navigazione web.}
+			\label{fig:dnscom}
+		\end{figure}		
 
 		Da questo esempio di comunicazione bidirezionale si può dedurre che i nodi applicanti il paradigma DTN sono gli HotSpots, i Nanosatelliti e i ColdSpots. Questi spezzano le connessioni a livello di trasporto nella logica di evoluzione del TCP splitting esposta nel paragrafo 2.4 e attuano la memorizzazione dei dati descritta nel paragrafo 2.3. Il Central Node è un nodo capace di lavorare al livello del Bundle Protocol, gli altri nodi della rete, come ad esempio i nodi Internet che collegano gli HS al CN, ignorano il BP assimilandolo ad un livello applicativo. 
 	
@@ -386,29 +466,73 @@
 		
 		Come parametro per definire l'inizio e la dine di una contatto è stata scelta la distanza. Un nanosatellite ed una stazione di terra sono in contatto quando la distanza tra loro è minore di 600 km. Invece due nanosatelliti sono in contatto tra loro quando la distanza che li separa è minore di 500 km.
 
-		Essendo che nella durata di una simulazione possono verificarsi centinaia di contatti anche coinvolgendo la stessa coppia di nodi, è necessario che per ogni contatto sia riportato il tempo di inizio e il tempo di fine per poterlo distinguere univocamente. 
+		Essendo che nella durata di una simulazione possono verificarsi migliaia di contatti anche coinvolgendo la stessa coppia di nodi, è necessario che per ogni contatto sia riportato il tempo di inizio e il tempo di fine per poterlo distinguere univocamente. 
+		
+		Ogni contatto porta con
 
-		I risultati vengono quindi raccolti e salvati in un file di testo chiamato Contact Table.
+		I risultati vengono quindi raccolti e salvati in un file di testo chiamato Contact Table, esempio in tabella \ref{tab:ctorig}.
 		
 		%Esempio di contact table e spiagazione dei vari campi
-		
-		
-		
+		\begin{table}
+			\begin{center}
+				\begin{tabular}{| c | c | c |}
+					\hline
+					In contatto con & Tempo inizio (ms) & Tempo fine (ms) \\
+					\hline
+					10.0.0.53 & 2161460 & 2248500 \\
+					50.0.0.22 & 2328230 & 2396780 \\
+					10.0.0.63 & 3846820 & 3953110 \\
+					10.0.0.64 & 4100830 & 4209000 \\
+					10.0.0.16 & 4668750 & 4722990 \\
+					10.0.0.65 & 4794460 & 4895300 \\
+					50.0.0.22 & 5028230 & 5096780 \\
+					10.0.0.9 & 6960070 & 7054830 \\
+					10.0.0.49 & 7221920 & 7299840 \\
+					10.0.0.53 & 7573630 & 7672310 \\
+					\hline
+				\end{tabular}
+			\caption{Esempio di Contact Table in relativa al nanosatellite \textbf{10.0.0.39}. I tempi sono in riferimento all'inizio della simulazione, notare la quantizzazione di 10ms. Essendo questo esempio prodotto dalla simulazione implementata della rete, per questione di comodità di sviluppo gli indirizzi dei nodi non sono canonici EID come prescritto dallo standard DTN ma indirizzi IP.}
+			\label{tab:ctorig}
+			\end{center}			
+		\end{table}
+
 
 		\section{Concetti di una rete deterministica} \label{concDet}
 
 		%%vantaggi di una rete deterministica in termini di gestione e ottimizzazione
 		La Contact Table rappresenta la conseguenza diretta di una rete deterministica come la nostra, dove per ogni istante del tempo di simulazione è definita la topologia della rete e sulla quale possono essere fatte scelte decisionali a priori. Questa peculiarità permette di poter avere una visione di insieme dello stato della rete e di tenere traccia delle conseguenze delle scelte fatte in tempo reale. In altre parole è possibile aggiornare la conoscenza futura dello stato della rete in funzione delle decisioni prese allo stato attuale. Un esempio pratico di questo concetto è stato introdotto dal presente lavoro di Tesi, offrendo interessanti possibilità di sviluppo futuro. 
 		
-		Immaginando i contatti come punti noti nel tempo, si pensi di allegare a questi una serie di informazioni riguardanti i nodi coinvolti. Un esempio di informazione in particolare, l'unica attualmente implementata e testata, è la quantità di dati trasferibile tra i due nodi nel contatto. Questo dato è di fondamentale importanza nella pianificazione dell'instradamento perché costituisce un limite fisico della rete: non tenere conto di questa limitazione porterebbe inevitabilmente ad un conflitto tra quanto pianificato e quanto succederebbe realmente. 
+		Immaginando i contatti come punti noti nel tempo, si pensi di allegare a questi una serie di informazioni riguardanti i nodi coinvolti. Un esempio di informazione in particolare, l'unica attualmente implementata e testata, è la quantità di dati trasferibile tra i due nodi nel contatto (Tabella \ref{tab:ctmod}). Questo dato è di fondamentale importanza nella pianificazione dell'instradamento perché costituisce un limite fisico della rete: non tenere conto di questa limitazione porterebbe inevitabilmente ad un conflitto tra quanto pianificato e quanto succederebbe realmente. 
 		Prendiamo come esempio la necessità di trasferire un pacchetto dal nodo A al nodo B. Questi estremi sono dati come input all'algoritmo di instradamento, che restituisce un elenco \textbf{ordinato} di contatti da poter sfruttare per costruire il percorso completo tra sorgente e destinazione. Se questo percorso viene confermato, allora sappiamo, ancora prima che il bundle effettivamente parta, che la banda disponibile dei contatti coinvolti nel trasferimento sarà sfruttata per la trasmissione del bundle in questione. Risulta quindi necessario sottrarre la dimensione del pacchetto dalla quantità di dati trasferibile per ogni contatto coinvolto. In questo modo, se un contatto risulta particolarmente gettonato, si evita di eccedere la sua capacità di trasferimento {\bf a priori}.
+		
+		\begin{table}[h]
+			\begin{center}
+				\begin{tabular}{| c | c | c | c | c |}
+					\hline
+					In contatto con & Tempo inizio (ms) & Tempo fine (ms) & Byte scambiabili & Byte disponibili\\
+					\hline
+					10.0.0.53 & 2161460 & 2248500 & 5488046 & 1458945\\
+					50.0.0.22 & 2328230 & 2396780 & 4322214 & 2930287\\
+					10.0.0.63 & 3846820 & 3953110 & 6701797 & 2309\\
+					10.0.0.64 & 4100830 & 4209000 & 6820334 & 6820334\\
+					10.0.0.16 & 4668750 & 4722990 & 3419940 & 3451005\\
+					10.0.0.65 & 4794460 & 4895300 & 6358163 & 70043\\
+					50.0.0.22 & 5028230 & 5096780 & 4322214 & 732010\\
+					10.0.0.9  & 6960070 & 7054830 & 5974807 & 1295837\\
+					10.0.0.49 & 7221920 & 7299840 & 4913011 & 278\\
+					10.0.0.53 & 7573630 & 7672310 & 6221971 & 3340923\\
+					\hline
+				\end{tabular}
+				\caption{Contact Table proposta in precedenza (\ref{tab:ctorig}) con l'aggiunta delle modifiche proposte. La quantità di dati scambiabili è direttamente dipendente ai parametri di simulazione scelti, descritti nel capitolo \ref{scenSim}. L'ultima colonna propone quantità verosimili di dati ancora allocabili per quel particolare contatto. }
+				\label{tab:ctmod}
+			\end{center}			
+		\end{table}		
 		
 		I vantaggi di questo genere di pianificazione stanno nella possibilità di prevedere ed evitare congestioni direttamente alla sorgente, evitando il verificarsi del problema piuttosto che affrontarlo {\bf a posteriori}. Non si rendono più necessari inoltre scambi di informazioni tra nodi per decidere sul momento che azione intraprendere, come anche non risulta necessario aggiornarli sulla topologia della rete, riducendo allo stesso tempo {\it overhead} di servizio, consumo di energia e onere computazionale a carico dei nodi DTN. Il nodo DTN deve quindi solamente seguire le istruzioni fornitegli, agendo senza prendere decisioni ulteriori.
 		
 		Rimane solo da chiarire come l'informazione di instradamento venga consegnata ai nodi intermedi. La soluzione scelta prevede di inserire tali informazioni nell'{\it header} DTN modificandolo opportunamente (fare riferimento alla figura \ref{routingheader}), tale modifica prevede l'aggiunta di un campo chiamato \emph{N Hops}, che indica il numero di salti necessari per raggiungere la destinazione, e nell'aggiunta di una serie di $N$ campi, inseriti secondo l'ordine di attraversamento, indicanti le due informazioni necessarie per identificare un contatto, indirizzo del nodo e tempo di inizio. Si ha quindi a che fare con un {\it header} a lunghezza variabile.
 		
-		\vspace{25pt}
-		\begin{figure}[h]
+		\begin{figure}[!h]
 			\centering
 			
 			\begin{bytefield}[bitwidth=0.5em]{64}						
@@ -425,12 +549,10 @@
 			
 			\caption{Campi aggiunti all'header DTN per supportare il routing si sorgente.}
 			\label{routingheader}
-			
 		\end{figure}
-		\vspace{5pt}
 		
 		Altra importante precisazione riguarda quali nodi della nostra rete DTN sono addetti alla creazione dei Bundle DTN e di conseguenza al calcolo a sorgente del loro instradamento. \`E necessario distinguere due flussi di traffico: dagli utenti rurali al Nodo Centrale e dal Nodo Centrale verso gli utenti rurali. Essendo il Nodo Centrale l'interfaccia di tutta la rete DTN con la rete Internet, esso risulta essere la sorgente per tutti i Bundle diretti verso gli utenti rurali. Diversa invece la situazione per il traffico in direzione inversa, dove è il ColdSpot l'interfaccia tra l'utente rurale e Internet. Sono quindi quest'ultimi a generare i Bundle diretti verso il nodo centrale. La rete DTN è confinata dal Nodo Centrale da un lato, connesso poi a Internet, e dai ColdSpot dall'altro, connessi ai rispettivi nodi rurali. Nodo Centrale e ColdSpot sono quindi gli unici nodi a poter creare e decidere l'instradamento dei Bundle DTN. Tuttavia, non esistendo un collegamento diretto tra nodo centrale e ColdSpot, non risulta possibile mantenere aggiornati i dati relativi all'uso dei contatti, cioè l'aggiornamento conseguente alla creazione di un bundle DTN al Nodo Centrale non può essere riportata in tempi brevi e senza spreco di risorse sui database di tutti i ColdSpot della DTN e viceversa. In questo lavoro di tesi si è deciso di testare l'algoritmo proposto considerando solo flussi di traffico destinati alle zone rurali. In questo modo l'unico che dovrà effettuare il calcolo dei percorsi sarà il Nodo Centrale.
-		% Diagramma con i due flussi che mostra i nodi coinvolti 
+		% IMMAGINE/SCHEMA CON I DUE FLUSSI
 		
 
 		\section{Algoritmo di instradamento} \label{algritmInstrad}
@@ -516,7 +638,7 @@
 				}
 			}
 		
-		\caption{Algoritmo SCGR scritto in pseudocodice}
+		\caption{Algoritmo SCGR scritto in pseudocodice.}
 		\label{scgr}		
 		\end{algorithm}
 		
@@ -571,7 +693,7 @@
 			\item Siccome che i collegamenti satellitari e relativi protocolli specializzati (LTP) non sono ancora stati implementati in ns-3, il collegamento radio è stato approssimato con una rete WiFi. Definendo le interfacce dei nanosatelliti e delle basi di terra con impostazioni particolari è possibile permettere la trasmissione di bundle su distanze molto maggiori delle normali reti WiFi. Il livello di rete invece è un normale IP. Per quanto riguarda il livello di trasporto invece si è sopperiti alla mancanza del Licklider Transmission Protocol (LTP) con il modulo UDP. Per emulare il meccanismo di ritrasmissione LTP, mancante per natura nell'UDP, lo si è implementato a livello applicativo nel bundle DTN. L'accoppiata quindi di UDP e ACK fornito dal Bundle Layer si comporta similmente all'LTP, dove il mittente mantiene una copia dei bundle inviati fintanto che non riceve una risposta positiva dal destinatario di avvenuta ricezione. 
 			
 			\item Per creare una comunicazione radio bidirezionale è stato necessario definire due interfacce radio per ogni nodo wireless, una in {\it Downlink} e una in {\it Uplink}. Questo sebbene ns-3 contenesse un modulo CSMA full-duplex, essendo che si aveva bisogno di un WiFi full-duplex. La soluzione quindi è stata di dotare i nodi con due distinte interfacce Wifi dalle stesse caratteristiche fisiche. Ad esempio un HotSpot mandando un dato ad un nanosatellite userà l'interfaccia di {\it Uplink}, questo riceverà i dati tramite l'interfaccia di {\it Uplink} ma risponderà tramite l'interfaccia di {\it Downlink}. Infine l'HotSpot riceverà la risposta tramite l'interfaccia di {\it Downlink}.
-			%SERVE RIFERIMENTO A QUALCHE PAPER
+		
 			\item L'header DTN è piuttosto diverso da quello canonico, in primo luogo per la parte di SCGR introdotta in \ref{concDet}, in generale semplificato di tutte le parti non necessarie per le simulazioni, minimizzando l'impatto di {\it overhead}.
 			
 			\vspace{25pt}
@@ -602,7 +724,7 @@
 				
 		\end{itemize}
 			
-		\section{Scenari di simulazione}
+		\section{Scenari di simulazione} \label{scenSim}
 		%i diversi scenari spiegati e motivati
 		Gli scenari sono la caratterizzazione di una specifica simulazione in termini di quantità di nodi e la loro disposizione. Per ragioni pratiche di tempi simulazione e capacità di calcolo si mantiene il numero dei nodi nell'ordine delle decine.
 		
@@ -612,23 +734,99 @@
 			\item {\bf Scenario TRE:} 8 HotSpot, 42 nanosatelliti, 16 ColdSpot
 		\end{itemize}
 		
-		Scenario UNO è il riferimento per gli altri due scenari, dove scenario DUE studia le prestazioni per un aumento delle stazioni di terra, mentre scenario TRE aumenta il numero di nanosatelliti in orbita.
+		Scenario UNO è il riferimento per gli altri due scenari, dove scenario DUE studia le prestazioni per un aumento delle stazioni di terra, mentre scenario TRE aumenta il numero di nanosatelliti in orbita. In questo modo è possibile indagare quale tipologia di nodi ha un impatto maggiore sulle prestazioni della rete.
 		
-		%IMMAGINI CON POSIZIONI DELLE STAZIONI DI TERRA
+		\begin{figure}[!b]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[scale = 0.5]{./img/8hs}
+			\caption{Scenario UNO.}
+			\label{fig:8hs}
+		\end{figure}	
 		
-		Quindi scenario UNO e DUE condividono la stessa costellazione di 24 nanosatelliti equamente distribuiti su 4 piani orbitali. Le figure XX e XX mostrano le differenti disposizioni sul pianeta delle stazioni di terra. Notare come gli HotSpot sono posizionati in zone civilizzate e connesse e invece i ColdSpot sono disseminati in zone desertiche, parchi naturali, isole e insediamenti remoti. 
+		\begin{figure}[!h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[scale = 0.5]{./img/16hs}
+			\caption{Scenario UNO.}
+			\label{fig:16hs}
+		\end{figure}			
+		
+		Quindi scenario UNO e DUE condividono la stessa costellazione di 24 nanosatelliti equamente distribuiti su 4 piani orbitali. Le figure \ref{fig:8hs} e \ref{fig:16hs} mostrano le differenti disposizioni sul pianeta delle stazioni di terra. Notare come gli HotSpot sono posizionati in zone raggiunte da Internet e invece i ColdSpot sono disseminati in zone desertiche, parchi naturali, isole e insediamenti remoti. 
 		Lo scenario TRE invece propone una differente costellazione, con 42 nanosatelliti distribuiti su 6 piani orbitali. Le stazioni di terra sono nelle stesse posizioni dello scenario UNO.
 		
-		Per quanto riguarda i flussi di traffico simulati su questi scenari si è stabilito uno schema composto da cinque flussi di traffico. La denominazione {\bf RN} sta per Rural Node e la distinzione tra flussi fa riferimento alla diversa quantità di nodi rurali di destinazione. I cinque diversi flussi quindi sono: {\bf 1RN, 2RN, 4RN, 8RN, 16RN}. Per ogni nodo rurale partono 1000 bundle che trasporta 50Kb di dati, generati uno al secondo a partire dal dall'istante zero di simulazione. Questa trama punta a farci capire come i differenti scenari reagiscono a intensità di traffico crescenti.
+		Tutti e tre gli scenari sono descritti dai seguenti parametri che rimangono invariati. Le orbite hanno un raggio di 6652655 metri, i satelliti quindi orbitano a 281655 metri dal suolo. Ogni nanosatellite è un CubeSat con una massa di 1.33Kg. Con questi parametri si ottengono periodi orbitali di circa 90 minuti.
 		
-		Infine tutti e tre gli scenari sono descritti dai seguenti parametri che rimangono invariati. Le orbite hanno un raggio di 6652655 metri, i satelliti quindi orbitano a 281655 metri dal suolo. Ogni nanosatellite è un CubeSat con una massa di 1.33Kg. Con questi parametri si ottengono periodi orbitali di circa 90 minuti.
-		
-		Le interfacce sono di tipo WiFi 802.11b a 2.4GHz, la velocità di trasmissione è di 63052 Bps. I protocolli superiori sono quelli esposti in \ref{simRete}.
-		
-		In modo da fornire un termine di paragone di riferimento per i dati raccolti con algoritmo di instradamento SCGR, si sono simulati gli stessi scenari e flussi con una scelta di instradamento statica. In pratica ad ogni zona rurale di destinazione è stato associato in modo statico un HotSpot che inoltrava i dati al primo nanosatellite disponibile. Questo nanosatellite manteneva i dati fintanto che non si trovava in contatto con la zona rurale di destinazione. Ci si riferirà a questo termine di paragone con il termine {\bf "Static"}, contrapposto a {\bf "SCGR"}, cioè la soluzione proposta in questa tesi.
-			
+		Le interfacce sono di tipo WiFi 802.11b a 2.4 GHz, la velocità di trasmissione è di 63052 Bps. I protocolli superiori sono quelli esposti nel capitolo \ref{simRete}.
+														
 		\section{Risultati}
 		%tabelle e grafici con i risultati
+		In modo da fornire un termine di paragone di riferimento per i dati raccolti con algoritmo di instradamento SCGR, si sono simulati gli stessi scenari e flussi con una scelta di instradamento statica. In pratica ad ogni zona rurale di destinazione è associato in modo statico un HotSpot che inoltra i dati al primo nanosatellite disponibile. Questo nanosatellite mantiene i dati fintanto che non si trovava in contatto con la zona rurale di destinazione. Ci si riferirà a questo termine di paragone con il termine {\bf "Static"}, contrapposto a {\bf "SCGR"}.
+		
+		Per quanto riguarda i flussi di traffico simulati su questi scenari si è stabilito uno schema composto da cinque flussi di traffico. La denominazione {\bf RN} sta per Rural Node e la distinzione tra flussi fa riferimento alla diversa quantità di nodi rurali di destinazione. I cinque diversi flussi sono: {\bf 1RN, 2RN, 4RN, 8RN, 16RN}. Per ogni nodo rurale partono 1000 bundle che trasporta 50Kb di dati, generati uno al secondo a partire dal dall'istante zero di simulazione. Questa trama punta a farci capire come i differenti scenari reagiscono a intensità di traffico crescenti. Essendo che la disposizione disomogenea delle zone rurali presenta una differente esposizione al traffico satellitare, la scelta dei nodi di destinazione è stata fatta in seguito ad uno studio della Contact Table in termini di quantità di contatti con i nanosatelliti per ogni zona rurale. Un numero di contatti maggiore implica possibilità di consegna più disparate e un flusso di dati più sostenuto. Sono stati quindi scelte destinazioni mediamente trafficate, in modo da non influenzare i risultati con scelte vantaggiose o svantaggiose. In uno stesso scenario e flusso, le simulazioni SCGR e Static condividono le stesse destinazioni rurali.
+		
+		I tempi proposti nei grafici sono il risultato di una media complessiva del tempo di consegna di tutti i bundle inviati nella simulazione. Per tempo di consegna si intende il lasso di tempo da quando il bundle è stato creato a quando questo raggiunge la destinazione. Essendo questi risultati frutto di simulazioni su scenari ridotti rispetto a quelli necessari per una rete reale, non sono di interesse i valori assoluti dei tempi di consegna ma piuttosto il loro valore relativo.
+		
+		I grafici \ref{fig:scenuno}, \ref{fig:scendue}, \ref{fig:scentre} mostrano il principale risultato di questo lavoro, in ogni circostanza l'algoritmo SCGR mostra prestazioni migliori rispetto ad una scelta statica. La tabella \ref{tab:gain} mostra in percentuale l'incremento prestazionale. I risultati dello Static hanno bisogno di un ulteriore commento non mostrando degli andamenti regolari e a volte in controtendenza con quanti ci si potrebbe aspettare, come nel grafico \ref{fig:scendue}. Le prestazioni della scelta statica sono fortemente dipendenti a come sono associati HotSpot e zone rurali, quindi alcuni andamenti irregolari sono possono essere giustificati da una combinazione non ottimale. In generale l'aumento dei flussi di traffico è ben assorbito dall'algoritmo SCGR, negli scenari DUE e TRE l'aumento dei tempi di consegna è appena percettibile, mentre lo scenario meno denso (UNO) comincia a saturarsi nei flussi più intensi.
+		
+		Infine i grafici \ref{fig:scgr} e \ref{fig:static} mettono in paragone le prestazioni dei differenti scenari. Per quanto riguarda la scelta statica si può dedurre che il numero di satelliti aumentato dallo scenario UNO allo scenario TRE non fa grossa differenza, non potendo sfruttare scambi di dati in orbita. Opposta invece la situazione per quanto riguarda l'algoritmo SCGR, dove il maggior numero di nanosatelliti dello scenario TRE offre molte più alternative di instradamento rispetto allo scenario UNO. Le prestazioni migliori si ottengono invece con lo scenario DUE, dove il maggior numero di HotSpot a disposizione permette di creare un percorso con meno salti tra nodi accorciando i tempi di consegna. 
+		
+		\begin{table}
+			\begin{center}
+				\begin{tabular}{| c | c | c | c |}
+					\hline
+					Scenario & UNO & DUE & TRE \\ \hline
+					1RN & 58\% & 87\% & 74\% \\ \hline
+					2RN & 65\% & 85\% & 75\% \\ \hline
+					4RN & 63\% & 84\% & 74\% \\ \hline
+					8RN & 59\% & 81\% & 69\% \\ \hline
+					16N & 57\% & 80\% & 69\% \\
+					\hline					
+				\end{tabular}
+				\caption{Incrementi prestazionali dell'algoritmo SCGR rispetto a Static.}
+				\label{tab:gain}
+			\end{center}			
+		\end{table}
+		
+		\begin{figure}[h]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[clip=true, trim = 0 0 0 50, scale = 0.8]{./img/scenuno}
+			\caption{Scenario UNO.}
+			\label{fig:scenuno}
+		\end{figure}			
+		
+		\begin{figure}[t]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[clip=true, trim = 0 0 0 50, scale = 0.8]{./img/scendue}
+			\caption{Scenario DUE.}
+			\label{fig:scendue}
+		\end{figure}	
+		
+		\begin{figure}[b]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[clip=true, trim = 0 0 0 50, scale = 0.8]{./img/scentre}
+			\caption{Scenario TRE.}
+			\label{fig:scentre}
+		\end{figure}	
+		
+		\begin{figure}[t]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[clip=true, trim = 0 0 0 50, scale = 0.8]{./img/scgr}
+			\caption{Prestazioni dei differenti scenari con algoritmo SCGR.}
+			\label{fig:scgr}
+		\end{figure}	
+		
+		\begin{figure}[b]
+			\centering
+			%\vspace{-20pt}
+			\includegraphics[clip=true, trim = 0 0 0 45, scale = 0.8]{./img/static}
+			\caption{Prestazioni dei differenti scenari con algoritmo Static.}
+			\label{fig:static}
+		\end{figure}			
 		
 	
 	\chapter{Conclusione e sviluppi futuri}
