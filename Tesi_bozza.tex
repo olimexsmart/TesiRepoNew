@@ -38,7 +38,7 @@
 	\clearpage
 	
 	\chapter*{Ringraziamenti}	
-	\textit{Ai miei nonni e ai miei genitori che mi hanno sempre sostenuto.}
+	\textit{Ai miei nonni e ai miei genitori per avermi sempre sostenuto.}
 	\clearpage
 	
 	\chapter*{Estratto}
@@ -54,11 +54,31 @@
 	
 	\tableofcontents
 	
-	\clearpage
 	
-	\chapter{Introduzione}
 	
-	\clearpage
+	\chapter*{Introduzione}
+	Deserti, catene montuose, atolli oceanici, steppe innevate e foreste amazzoniche sono alcuni esempi di quello che in questo ambito di ricerca sarà definito come \textbf{zone rurale}. 
+	
+	La scopo di questa ricerca è poter fornire un servizio Internet a questi angoli del pianeta dalle condizioni avverse, non necessariamente solo dal punto di vista meteorologico o morfologico ma anche dal punto di vista sociale e politico. Zone come queste non sono raggiungibili tramite mezzi terrestri come reti cablate o ponti radio, i costi e le asperità tecniche da affrontare non sarebbero giustificabili se rapportate con il bacino di utenza che andrebbero a servire. 
+	
+	La soluzione proposta è la creazione di una rete satellitare dalla copertura globale, con particolare attenzione alla sostenibilità economica. Una rete satellitare è completamente indifferente alle condizioni fisiche o politiche del territorio sottostante, potendo così offrire una valida soluzione non ad una zona rurale in particolare ma a tutte. Per il tipo di utenza che si va a raggiungere e per il diretto confronto con le alternative commerciali già esistenti è stato necessario prestare particolare attenzione al costo di un'infrastruttura simile. Il una rete satellitare l'investimento più oneroso è rappresentato appunto dai satelliti, non solo la loro progettazione, costruzione e testing, ma anche il loro lancio in orbita e mantenimento negli anni. La scelta della piattaforma orbitale è ricaduta quindi sui \textbf{nanosatelliti}, una realtà piuttosto recente che promette interessanti possibilità dal punto di vista dei costi essendo una famiglia di satelliti dal peso e dalle dimensioni estremamente ridotte e standardizzate, abbattendo così i costi di sviluppo e costruzione, permettendo lanci estremamente economici potendo essere imbarcati come payload secondario. 
+	
+	Una rete satellitare rappresenta comunque una notevole sfida ingegneristica, nell'ambito di questo lavoro ci si soffermerà sull'aspetto protocollare, non essendo banale supportare una varietà così eterogenea di nodi e collegamenti. I sistemi satellitari costituiscono già di per sé una notevole complicazione a più livelli dello stack protocollare, soffermandoci su quelli di trasporto e superiori i principali problemi stanno nelle lunghe latenze e disturbi del canale. Inoltre una connettività Internet convenzionale impone che esista una connessione diretta e continua tra sorgente e destinazione, condizione non sempre assicurabile in questo contesto. 
+	
+	La risposta in questo ambito è il \textbf{Delay Tolerant Networking} (DTN), basato sull'introduzione di un layer protocollare aggiuntivo, il Bundle Layer, implementando il Bundle Protocol (BP). Il Bundle Layer introduce il supporto per la memorizzazione a lungo termine ai nodi intermedi, permettendo di reagire efficacemente a disconnessioni e ritardi. La Protocol Data Unit DTN è chiamata Bundle ed è generata al nodo DTN sorgente incapsulando un pacchetto di livello applicativo. Il routing del Bundle è attuato solo ai nodi DTN intermedi. 	
+	
+	Il routing è il principale punto approfondito in questo lavoro, proponendo per la rete in questione un'innovativa soluzione che sfrutta efficacemente la natura deterministica della rete. Sfruttando la conoscenza pregressa del moto dei satelliti, l'algoritmo di \textbf{Source Contact Graph Routing} crea una pletora di diversi possibili percorsi direttamente alla sorgente. Inoltre logica deterministica viene espressa appieno tenendo conto dell'impatto sulla rete dei percorsi creati, gestendo con efficacia possibili saturazioni e conflitti. 
+	
+	Infine questa proposta è implementata in ns-3, un simulatore di reti, e testata per verificarne la fattibilità e l'efficacia.
+	
+	Il presente elaborato è strutturato come segue.
+	\begin{itemize}
+		\item \textbf{Capitolo 1} introduce le reti DTN, motivando la loro necessità esponendo i limiti delle reti convenzionali in condizioni estreme ed espone i dettagli architetturali insieme alle sue caratteristiche peculiari.
+		\item \textbf{Capitolo 2} elenca e confronta le diverse piattaforme satellitari dando così un contesto alla motivazione della nostra rete nanosatellitare. Viene poi definita l'architettura di rete e il suo funzionamento, confrontando infine la nostra proposta con le alternative disponibili e lo stato attuale della ricerca.
+		\item \textbf{Capitolo 3} riguarda il nuovo approccio all'instradamento introdotto in questo lavoro, illustrando come è sfruttata la natura deterministica della rete e infine esponendo il funzionamento dell'algoritmo proposto.
+		\item \textbf{Capitolo 4} raccoglie i risultati delle simulazioni effettuate dopo aver esposto la piattaforma di simulazione e i parametri scelti.
+		\item \textbf{Capitolo 5} propone le conclusioni ed una serie di possibili sviluppi degli argomenti proposti.
+	\end{itemize}
 	
 	\chapter{Delay Tolerant Networks}
 		
@@ -66,7 +86,7 @@
 		
 		Le reti convenzionali mal si adattano a condizioni ambientali estreme e questo argomento è un campo attivo di ricerca. I principali limiti dei dispositivi operanti in queste circostanze riguardano la capacità di trasmissione limitata, la scarsa disponibilità di energia e memoria, il movimento e in particolare lunghi ritardi e connettività intermittente. Queste ultime limitazioni caratterizzeranno principalmente lo scenario considerato in questo lavoro, incentrato su reti di tipo satellitare dove il costante movimento orbitale impone una connettività intermittente e la notevole distanza tra i nodi risente del limite della velocità di propagazione della luce. La comune pila ISO/OSI male si adatta a queste condizioni, soffrendo a più livelli delle peculiari caratteristiche della rete. In particolare la combinazione TCP/IP è resa inutilizzabile da questi impedimenti e tale argomento verrà approfondito nel capitolo \ref{limProt}. Varie soluzioni sono state proposte per affrontare questo problema, tra cui i Performance Enhancing Proxies (PEPs) \cite{borderperformance} che però, oltre a non rappresentare una vera soluzione, creano problemi di incompatibilità con gli attuali protocolli di sicurezza.
 		
-		Una valida soluzione alternativa è il paradigma DTN \cite{caini2011delay}, il quale prevede l'introduzione di un layer aggiuntivo, chiamato Bundle Layer (BL)\cite{cerf2007rfc}, e del corrispondente protocollo, chiamato Bundle Protocol (BP)\cite{scott2007bundle}, sovrastante il livello di trasporto (TCP, UDP, etc..) o il livello fisico (Bluetooth, Ethernet, ...). Questa aggiunta permette di affrontare interruzioni del canale e lunghi ritardi garantendo la memorizzazione dei dati anche per lunghi periodi nei nodi intermedi, in attesa che il canale torni disponibile. Dividendo il percorso end-to-end in più salti di tipo DTN si estende il concetto di TCP-splitting già utilizzato sui PEP, permettendo di usare protocolli specializzati necessari, ad esempio, sui link satellitari.
+		Una valida soluzione alternativa è il paradigma DTN \cite{caini2011delay}, il quale prevede l'introduzione di un layer aggiuntivo, chiamato Bundle Layer (BL)\cite{cerf2007rfc}, e del corrispondente protocollo, chiamato Bundle Protocol (BP)\cite{scott2007bundle}, sovrastante il livello di trasporto (TCP, UDP, etc\dots) o il livello fisico (Bluetooth, Ethernet, \dots). Questa aggiunta permette di affrontare interruzioni del canale e lunghi ritardi garantendo la memorizzazione dei dati anche per lunghi periodi nei nodi intermedi, in attesa che il canale torni disponibile. Dividendo il percorso end-to-end in più salti di tipo DTN si estende il concetto di TCP-splitting già utilizzato sui PEP, permettendo di usare protocolli specializzati necessari, ad esempio, sui link satellitari.
 		
 		\section{Limitazioni dei protocolli convenzionali in condizioni estreme} \label{limProt}
 		
@@ -276,7 +296,7 @@
 				\centering
 				%\vspace{-20pt}
 				\includegraphics[scale = 0.5]{./img/potocnik}
-				\caption{Da sinistra verso destra: Herman Potočnik (1892–1929), schemi orbita geostazionaria e stazione orbitale, la pubblicazione dove espose le sue idee..}
+				\caption{Da sinistra verso destra: Herman Potočnik (1892–1929), schemi orbita geostazionaria e stazione orbitale, la pubblicazione dove espose le sue idee.}
 				\label{fig:poto}
 			\end{figure}			
 			
